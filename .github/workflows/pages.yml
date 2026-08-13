@@ -22,7 +22,8 @@ jobs:
       - name: Prepare website
         run: |
           mkdir -p public
-          cp index.html styles.css script.js 404.html .nojekyll public/
+          cp index.html styles.css script.js home.js nav-fix.js supabase-config.js supabase-app.js advanced-supabase.js production-features.js 404.html .nojekyll public/
+          cp -R assets public/assets
 
       - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
