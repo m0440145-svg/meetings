@@ -1,0 +1,41 @@
+(() => {
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const toast=m=>window.showToast?window.showToast(m):alert(m);
+  const wait=()=>new Promise(r=>setTimeout(r,600));
+  async function getDB(){for(let i=0;i<20;i++){if(window.ehsanDB)return window.ehsanDB;await wait();}return null}
+  async function user(db){return (await db.auth.getUser()).data.user}
+  async function log(db,action,type,id=null,metadata={}){const u=await user(db);if(u)await db.from('audit_logs').insert({user_id:u.id,action,entity_type:type,entity_id:id,metadata});}
+
+  async function loadAdvanced(db){
+    const [{data:polls},{data:circulars},{data:files},{data:audit},{data:settings}]=await Promise.all([
+      db.from('schedule_polls').select('*,schedule_poll_options(*)').order('created_at',{ascending:false}),
+      db.from('circular_decisions').select('*').order('created_at',{ascending:false}),
+      db.from('attachments').select('*,attachment_reads(count)').order('created_at',{ascending:false}),
+      db.from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100),
+      db.from('app_settings').select('*').eq('key','platform').maybeSingle()
+    ]);
+    const pollBox=$('#schedulePolls'); if(pollBox)pollBox.innerHTML=(polls||[]).map(p=>`<article><h3>${esc(p.title)}</h3><span class="tag">${esc(p.status)}</span><div class="list">${(p.schedule_poll_options||[]).map(o=>`<div class="list-item">${new Date(o.option_time).toLocaleString('ar-SA')} <button class="btn small ghost poll-vote" data-option="${o.id}">مناسب لي</button></div>`).join('')}</div></article>`).join('')||'<article>لا توجد استطلاعات.</article>';
+    const cirBox=$('#circularsList'); if(cirBox)cirBox.innerHTML=(circulars||[]).map(c=>`<article><h3>${esc(c.title)}</h3><p>${esc(c.description||'')}</p><span class="tag">${esc(c.status)}</span><div class="form-actions"><button class="btn small primary circular-vote" data-id="${c.id}" data-choice="موافق">موافق</button><button class="btn small ghost circular-vote" data-id="${c.id}" data-choice="غير موافق">غير موافق</button><button class="btn small ghost circular-vote" data-id="${c.id}" data-choice="ممتنع">ممتنع</button></div></article>`).join('')||'<article>لا توجد قرارات بالتمرير.</article>';
+    const fbox=$('#filesList'); if(fbox)fbox.innerHTML=(files||[]).map(f=>`<div class="reading-row"><div><strong>${esc(f.file_name)}</strong><div class="meta">${Math.round((f.size_bytes||0)/1024)} KB</div></div><span>${f.attachment_reads?.[0]?.count||0} قراءة</span><button class="btn small ghost open-secure-file" data-id="${f.id}" data-path="${esc(f.storage_path)}">فتح آمن</button></div>`).join('')||'<div class="list-item">لا توجد ملفات.</div>';
+    const abox=$('#auditList'); if(abox)abox.innerHTML=(audit||[]).map(a=>`<div class="audit-item"><span>${new Date(a.created_at).toLocaleString('ar-SA')}</span><strong>${esc(a.action)}</strong><span>${esc(a.entity_type||'')}</span></div>`).join('')||'<div class="list-item">لا توجد أحداث.</div>';
+    const v=settings?.value||{}; [['#settingEmail','email'],['#settingWhatsapp','whatsapp'],['#settingOtp','otp'],['#settingWatermark','watermark'],['#settingReminders','autoReminders']].forEach(([id,k])=>{const e=$(id);if(e)e.checked=!!v[k]});
+  }
+
+  async function bind(db){
+    $('#newSchedulePoll')?.addEventListener('click',async()=>{const title=prompt('عنوان استطلاع الموعد');if(!title)return;const raw=prompt('أدخل المواعيد المقترحة مفصولة بفاصلة بصيغة 2026-08-20T18:00');if(!raw)return;const u=await user(db);const {data,error}=await db.from('schedule_polls').insert({title,created_by:u.id}).select().single();if(error)return toast(error.message);const opts=raw.split(',').map(x=>x.trim()).filter(Boolean).map(x=>({poll_id:data.id,option_time:new Date(x).toISOString()}));if(opts.length)await db.from('schedule_poll_options').insert(opts);await log(db,'إنشاء استطلاع موعد','schedule_poll',data.id);toast('تم إنشاء الاستطلاع');loadAdvanced(db)});
+    document.addEventListener('click',async e=>{
+      const pv=e.target.closest('.poll-vote');if(pv){const u=await user(db);await db.from('schedule_poll_responses').upsert({option_id:pv.dataset.option,user_id:u.id,preference:'مناسب'});toast('تم تسجيل تفضيلك');return}
+      const cv=e.target.closest('.circular-vote');if(cv){const u=await user(db);await db.from('circular_responses').upsert({circular_id:cv.dataset.id,user_id:u.id,choice:cv.dataset.choice});await log(db,'تصويت على قرار بالتمرير','circular',cv.dataset.id,{choice:cv.dataset.choice});toast('تم توثيق التصويت');return}
+      const of=e.target.closest('.open-secure-file');if(of){const u=await user(db);await db.from('attachment_reads').upsert({attachment_id:of.dataset.id,user_id:u.id,read_at:new Date().toISOString()});await db.from('file_access_logs').insert({attachment_id:of.dataset.id,user_id:u.id,action:'فتح'});const {data,error}=await db.storage.from('meeting-files').createSignedUrl(of.dataset.path,120);if(error)return toast(error.message);window.open(data.signedUrl,'_blank','noopener');loadAdvanced(db);return}
+    });
+    $('#globalFiles')?.addEventListener('change',async e=>{const u=await user(db);for(const file of [...e.target.files]){const path=`general/${crypto.randomUUID()}-${file.name}`;const up=await db.storage.from('meeting-files').upload(path,file);if(!up.error)await db.from('attachments').insert({file_name:file.name,storage_path:path,mime_type:file.type,size_bytes:file.size,uploaded_by:u.id});}await log(db,'رفع ملفات إلى مركز المرفقات','attachment');toast('تم رفع الملفات إلى التخزين الآمن');loadAdvanced(db)});
+    $('#saveTranscript')?.addEventListener('click',async()=>{const content=$('#liveTranscript')?.value||'';if(!content)return toast('أدخل نص التفريغ');const u=await user(db);const meetingId=$('#minutesMeeting')?.value||null;await db.from('transcripts').insert({meeting_id:meetingId||null,content,created_by:u.id});await log(db,'حفظ تفريغ اجتماع','transcript');toast('تم حفظ التفريغ مركزيًا')});
+    $('#whiteboard')?.addEventListener('blur',async e=>{const u=await user(db);const meetingId=$('#minutesMeeting')?.value||null;if(!meetingId)return;const {data}=await db.from('whiteboards').select('id').eq('meeting_id',meetingId).maybeSingle();if(data)await db.from('whiteboards').update({content:e.target.innerHTML,updated_by:u.id,updated_at:new Date().toISOString()}).eq('id',data.id);else await db.from('whiteboards').insert({meeting_id:meetingId,content:e.target.innerHTML,updated_by:u.id});});
+    $('#newCircular')?.addEventListener('click',async()=>{const title=prompt('عنوان القرار بالتمرير');if(!title)return;const description=prompt('وصف القرار')||'';const u=await user(db);const {data,error}=await db.from('circular_decisions').insert({title,description,created_by:u.id}).select().single();if(error)return toast(error.message);await log(db,'إنشاء قرار بالتمرير','circular',data.id);toast('تم إنشاء القرار');loadAdvanced(db)});
+    $('#saveSettings')?.addEventListener('click',async()=>{const u=await user(db);const value={email:!!$('#settingEmail')?.checked,whatsapp:!!$('#settingWhatsapp')?.checked,otp:!!$('#settingOtp')?.checked,watermark:!!$('#settingWatermark')?.checked,autoReminders:!!$('#settingReminders')?.checked,reminderHours:Number($('#reminderHours')?.value||24),visibility:'private'};await db.from('app_settings').upsert({key:'platform',value,updated_by:u.id,updated_at:new Date().toISOString()});await log(db,'تحديث إعدادات المنصة','settings');toast('تم حفظ الإعدادات مركزيًا')});
+  }
+
+  async function start(){const db=await getDB();if(!db)return;for(let i=0;i<10&&!$('#advancedNavMarker');i++)await wait();await bind(db);await loadAdvanced(db);db.channel('ehsan-advanced').on('postgres_changes',{event:'*',schema:'public',table:'schedule_polls'},()=>loadAdvanced(db)).on('postgres_changes',{event:'*',schema:'public',table:'circular_decisions'},()=>loadAdvanced(db)).on('postgres_changes',{event:'*',schema:'public',table:'attachments'},()=>loadAdvanced(db)).subscribe();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
