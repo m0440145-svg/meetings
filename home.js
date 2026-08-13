@@ -1,11 +1,6 @@
 (function(){
+  const css=document.createElement('style');css.textContent='#authGate{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#f9f4ee,#fff);display:grid;place-items:center;padding:20px}.auth-card{width:min(430px,94vw);background:#fff;border:1px solid #eadfd8;border-radius:24px;padding:28px;box-shadow:0 25px 80px rgba(68,46,31,.18);text-align:center}.auth-card img{width:180px;height:90px;object-fit:contain}.auth-card h2{margin:8px 0;color:#cf6028}.auth-card p{color:#756860}.auth-card form{display:grid;gap:14px;text-align:right;margin:20px 0}.auth-card small{display:block;margin-top:12px;color:#b64242}.auth-card .btn{width:100%}';document.head.appendChild(css);
   const loadScript=(src)=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});
-  async function start(){
-    try{
-      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
-      await loadScript('supabase-config.js');
-      await loadScript('supabase-app.js');
-    }catch(e){console.error(e);const t=document.getElementById('toast');if(t){t.textContent='تعذر الاتصال بخدمة البيانات المركزية';t.classList.add('show')}}
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+  async function start(){try{await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');await loadScript('supabase-config.js');await loadScript('supabase-app.js')}catch(e){console.error(e);const t=document.getElementById('toast');if(t){t.textContent='تعذر الاتصال بخدمة البيانات المركزية';t.classList.add('show')}}}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
