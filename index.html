@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#cf6028" />
+  <meta name="description" content="منصة جمعية الإحسان لإدارة اجتماعات مجلس الإدارة واللجان" />
+  <title>منصة الاجتماعات | جمعية الإحسان</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-box" data-view-jump="home" role="button" tabindex="0" title="العودة إلى الصفحة الرئيسية">
+        <img src="assets/logo.svg" alt="شعار جمعية الإحسان" class="logo" />
+        <div><strong>منصة الاجتماعات</strong><small>جمعية الإحسان للخدمات الاجتماعية</small></div>
+      </div>
+      <nav class="side-nav" id="sideNav">
+        <button class="nav-item active" data-view="home">⌂ <span>الصفحة الرئيسية</span></button>
+        <button class="nav-item" data-view="dashboard">▣ <span>لوحة التحكم</span></button>
+        <button class="nav-item" data-view="meetings">◫ <span>الاجتماعات</span></button>
+        <button class="nav-item" data-view="new-meeting">＋ <span>اجتماع جديد</span></button>
+        <button class="nav-item" data-view="members">♙ <span>الأعضاء</span></button>
+        <button class="nav-item" data-view="committees">◉ <span>اللجان</span></button>
+        <button class="nav-item" data-view="votes">✓ <span>التصويت والنصاب</span></button>
+        <button class="nav-item" data-view="minutes">▤ <span>المحاضر والتوقيع</span></button>
+        <button class="nav-item" data-view="tasks">☑ <span>القرارات والمهام</span></button>
+        <button class="nav-item" data-view="notifications">◌ <span>الإشعارات</span></button>
+        <button class="nav-item" data-view="mail">✉ <span>البريد الوارد والصادر</span></button>
+      </nav>
+      <div class="side-foot">الإصدار التجريبي 2.1<br><span>البيانات تحفظ محليًا في المتصفح</span></div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-right">
+          <button class="icon-btn" id="menuBtn" aria-label="القائمة">☰</button>
+          <div><h1 id="pageTitle">الصفحة الرئيسية</h1><p id="pageSub">مرحبًا بك في منصة اجتماعات جمعية الإحسان</p></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" data-view-jump="notifications" title="الإشعارات">🔔 <span class="badge" id="notifBadge">0</span></button>
+          <button class="profile-btn"><span class="avatar">م</span><span>مدير النظام</span></button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-home">
+        <div class="hero-panel">
+          <div><span class="eyebrow">منصة الاجتماعات والحوكمة الرقمية</span><h2>مرحبًا بكم في منصة اجتماعات جمعية الإحسان</h2><p>بوابة موحدة لإدارة اجتماعات مجلس الإدارة واللجان، بدءًا من الدعوة وجدول الأعمال والملفات، مرورًا بالحضور والتصويت، وحتى اعتماد المحاضر والتوقيع ومتابعة القرارات.</p></div>
+          <div class="hero-actions"><button class="btn primary" data-view-jump="new-meeting">＋ إنشاء اجتماع جديد</button><button class="btn ghost" data-view-jump="dashboard">فتح لوحة التحكم</button></div>
+        </div>
+        <div class="stats-grid">
+          <article><span>اجتماعاتي القادمة</span><strong id="homeMeetings">0</strong><small>اجتماعات مجدولة</small></article>
+          <article><span>تنبيهات جديدة</span><strong id="homeNotifications">0</strong><small>تحتاج الاطلاع</small></article>
+          <article><span>مهام مفتوحة</span><strong id="homeTasks">0</strong><small>تحتاج متابعة</small></article>
+          <article><span>محاضر معتمدة</span><strong id="homeMinutes">0</strong><small>تم توقيعها</small></article>
+        </div>
+        <div class="cards-grid">
+          <article><div class="member-head"><div class="member-avatar">＋</div><div><strong>إنشاء اجتماع</strong><div class="meta">دعوة الأعضاء وتحديد الموعد</div></div></div><p>أنشئ اجتماعًا جديدًا وأضف جدول الأعمال وروابط Zoom أو Teams أو Google Meet وارفع عدة ملفات.</p><button class="btn small primary" data-view-jump="new-meeting">ابدأ الآن</button></article>
+          <article><div class="member-head"><div class="member-avatar">◫</div><div><strong>الاجتماعات القادمة</strong><div class="meta">متابعة الحضور والملفات</div></div></div><p>استعرض الاجتماعات المجدولة واطلع على المرفقات وروابط الحضور وحالة كل اجتماع.</p><button class="btn small ghost" data-view-jump="meetings">عرض الاجتماعات</button></article>
+          <article><div class="member-head"><div class="member-avatar">✓</div><div><strong>التصويت</strong><div class="meta">النصاب والقرارات</div></div></div><p>انتقل إلى التصويت لتوثيق الأصوات وحساب النصاب وحفظ نتيجة القرار.</p><button class="btn small ghost" data-view-jump="votes">فتح التصويت</button></article>
+          <article><div class="member-head"><div class="member-avatar">▤</div><div><strong>المحاضر والتوقيع</strong><div class="meta">اعتماد إلكتروني</div></div></div><p>أنشئ المحضر وسجل فرص التحسين والتوصيات ثم اعتمده بالتوقيع الإلكتروني.</p><button class="btn small ghost" data-view-jump="minutes">فتح المحاضر</button></article>
+        </div>
+        <div class="dashboard-grid" style="margin-top:20px">
+          <div class="card"><div class="card-head"><h3>أقرب الاجتماعات</h3><button class="link-btn" data-view-jump="meetings">عرض الكل</button></div><div id="homeUpcomingList" class="list"></div></div>
+          <div class="card"><div class="card-head"><h3>تنبيهات مهمة</h3><button class="link-btn" data-view-jump="notifications">عرض الكل</button></div><div id="homeRecentNotifications" class="list"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-dashboard">
+        <div class="hero-panel"><div><span class="eyebrow">حوكمة رقمية للاجتماعات والقرارات</span><h2>إدارة متكاملة من الدعوة حتى اعتماد المحضر ومتابعة القرار</h2><p>لوحة واحدة لمجلس الإدارة واللجان تشمل الملفات، روابط Zoom وTeams وGoogle Meet، التصويت، التوقيع الإلكتروني، القرارات، الإشعارات والبريد.</p></div><div class="hero-actions"><button class="btn primary" data-view-jump="new-meeting">＋ إنشاء اجتماع</button><button class="btn ghost" data-view-jump="meetings">استعراض الاجتماعات</button></div></div>
+        <div class="stats-grid"><article><span>الاجتماعات القادمة</span><strong id="statMeetings">0</strong><small>مجدولة</small></article><article><span>الأعضاء</span><strong id="statMembers">0</strong><small>مسجلون</small></article><article><span>المهام المفتوحة</span><strong id="statTasks">0</strong><small>تحتاج متابعة</small></article><article><span>المحاضر الموقعة</span><strong id="statSigned">0</strong><small>معتمدة</small></article></div>
+        <div class="dashboard-grid"><div class="card"><div class="card-head"><h3>أقرب الاجتماعات</h3><button class="link-btn" data-view-jump="meetings">عرض الكل</button></div><div id="upcomingList" class="list"></div></div><div class="card"><div class="card-head"><h3>آخر الإشعارات</h3><button class="link-btn" data-view-jump="notifications">عرض الكل</button></div><div id="recentNotifications" class="list"></div></div></div>
+      </section>
+
+      <section class="view" id="view-meetings"><div class="section-head"><div><span class="eyebrow">سجل الاجتماعات</span><h2>اجتماعات مجلس الإدارة واللجان</h2></div><button class="btn primary" data-view-jump="new-meeting">＋ اجتماع جديد</button></div><div class="toolbar"><input id="meetingSearch" placeholder="بحث بعنوان الاجتماع أو اللجنة..." /><select id="meetingFilter"><option value="all">كل الحالات</option><option>مجدول</option><option>منعقد</option><option>مكتمل</option></select></div><div class="table-wrap"><table><thead><tr><th>الاجتماع</th><th>اللجنة</th><th>التاريخ</th><th>الوقت</th><th>النمط</th><th>الحالة</th><th>المرفقات</th><th>إجراء</th></tr></thead><tbody id="meetingsTable"></tbody></table></div></section>
+      <section class="view" id="view-new-meeting"><div class="section-head"><div><span class="eyebrow">إنشاء اجتماع</span><h2>بيانات الاجتماع وجدول الأعمال والمرفقات</h2></div></div><form id="meetingForm" class="form-card"><div class="form-grid cols-2"><label>عنوان الاجتماع<input name="title" required placeholder="مثال: الاجتماع السابع لمجلس الإدارة" /></label><label>الجهة / اللجنة<select name="committee" id="meetingCommittee" required></select></label><label>التاريخ الميلادي<input name="date" type="date" required /></label><label>التاريخ الهجري<input name="hijri" placeholder="مثال: 03 ربيع الأول 1448هـ" /></label><label>وقت البداية<input name="time" type="time" required /></label><label>وقت النهاية<input name="endTime" type="time" /></label><label>نوع الحضور<select name="mode"><option>حضوري</option><option>عن بُعد</option><option>حضوري + عن بُعد</option></select></label><label>الموقع<input name="location" placeholder="قاعة مجلس الإدارة" /></label><label>منصة الاجتماع<select name="platform"><option>بدون رابط</option><option>Zoom</option><option>Microsoft Teams</option><option>Google Meet</option></select></label><label>رابط الاجتماع<input name="meetingUrl" type="url" placeholder="https://..." /></label></div><label>وصف / ملاحظات<textarea name="description" rows="3" placeholder="تعليمات الحضور أو وصف موجز"></textarea></label><div class="subsection"><div class="card-head"><h3>جدول الأعمال</h3><button class="btn small ghost" type="button" id="addAgenda">＋ إضافة محور</button></div><div id="agendaRows" class="agenda-editor"></div></div><div class="subsection"><h3>ملفات الاجتماع</h3><label class="upload-zone">📎 <strong>ارفع عدة ملفات</strong><span>PDF، Word، Excel، صور وغيرها</span><input id="meetingFiles" type="file" multiple /></label><div id="filePreview" class="chips"></div></div><div class="form-actions"><button class="btn primary" type="submit">حفظ وجدولة الاجتماع</button><button class="btn ghost" type="reset">مسح الحقول</button></div></form></section>
+      <section class="view" id="view-members"><div class="section-head"><div><span class="eyebrow">إدارة الأعضاء</span><h2>بيانات أعضاء المجلس واللجان</h2></div><button class="btn primary" id="addMemberBtn">＋ إضافة عضو</button></div><div class="cards-grid" id="membersGrid"></div></section>
+      <section class="view" id="view-committees"><div class="section-head"><div><span class="eyebrow">اللجان</span><h2>إدارة اللجان المنبثقة من المجلس</h2></div><button class="btn primary" id="addCommitteeBtn">＋ لجنة جديدة</button></div><div class="cards-grid" id="committeesGrid"></div></section>
+      <section class="view" id="view-votes"><div class="section-head"><div><span class="eyebrow">التصويت والنصاب</span><h2>إنشاء تصويت وتوثيق النتائج</h2></div></div><div class="split-grid"><form id="voteForm" class="form-card compact"><label>الاجتماع<select id="voteMeeting" required></select></label><label>موضوع التصويت<input id="voteTitle" required /></label><label>نوع التصويت<select id="voteType"><option>معلن</option><option>سري</option></select></label><label>عدد الحاضرين<input id="votePresent" type="number" min="0" value="0" /></label><label>إجمالي الأعضاء<input id="voteTotal" type="number" min="1" value="1" /></label><div class="vote-options"><label>موافق<input id="voteYes" type="number" min="0" value="0" /></label><label>غير موافق<input id="voteNo" type="number" min="0" value="0" /></label><label>ممتنع<input id="voteAbstain" type="number" min="0" value="0" /></label></div><button class="btn primary" type="submit">حفظ نتيجة التصويت</button></form><div class="card"><h3>سجل التصويتات</h3><div id="votesList" class="list"></div></div></div></section>
+      <section class="view" id="view-minutes"><div class="section-head"><div><span class="eyebrow">المحاضر والتوقيع</span><h2>إعداد المحضر وتوثيق التوقيع الإلكتروني</h2></div></div><div class="split-grid"><form id="minutesForm" class="form-card compact"><label>الاجتماع<select id="minutesMeeting" required></select></label><label>نص المحضر<textarea id="minutesText" rows="8" placeholder="أبرز المناقشات والقرارات..."></textarea></label><label>فرص التحسين / التوصيات<textarea id="minutesImprovement" rows="4"></textarea></label><div class="signature-box"><strong>التوقيع الإلكتروني</strong><canvas id="signatureCanvas" width="620" height="180"></canvas><div class="signature-tools"><button type="button" class="btn small ghost" id="clearSignature">مسح التوقيع</button><label class="btn small ghost file-label">رفع توقيع PNG<input type="file" id="signatureUpload" accept="image/png,image/jpeg" /></label></div></div><button class="btn primary" type="submit">حفظ واعتماد المحضر</button></form><div class="card"><h3>المحاضر المحفوظة</h3><div id="minutesList" class="list"></div></div></div></section>
+      <section class="view" id="view-tasks"><div class="section-head"><div><span class="eyebrow">القرارات والمهام</span><h2>متابعة التنفيذ بعد الاجتماعات</h2></div><button class="btn primary" id="addTaskBtn">＋ مهمة جديدة</button></div><div class="kanban"><div><h3>جديدة</h3><div id="tasks-new" class="task-column"></div></div><div><h3>قيد التنفيذ</h3><div id="tasks-progress" class="task-column"></div></div><div><h3>مكتملة</h3><div id="tasks-done" class="task-column"></div></div></div></section>
+      <section class="view" id="view-notifications"><div class="section-head"><div><span class="eyebrow">الإشعارات</span><h2>تذكيرات الحضور والتصويت والتوقيع</h2></div><button class="btn primary" id="addNotifBtn">＋ إشعار</button></div><div class="notice-settings card"><label><input type="checkbox" checked disabled /> إشعارات داخل المنصة</label><label><input type="checkbox" id="emailChannel" /> البريد الإلكتروني <small>تجريبي في هذه النسخة</small></label><label><input type="checkbox" id="whatsappChannel" /> واتساب <small>يتطلب مزود API خارجي</small></label></div><div id="notificationsList" class="list card"></div></section>
+      <section class="view" id="view-mail"><div class="section-head"><div><span class="eyebrow">البريد الداخلي</span><h2>الوارد والصادر لكل عضو</h2></div><button class="btn primary" id="composeBtn">✉ رسالة جديدة</button></div><div class="mail-layout"><div class="mail-folders"><button class="active" data-mailbox="inbox">الوارد <span id="inboxCount">0</span></button><button data-mailbox="sent">الصادر <span id="sentCount">0</span></button></div><div id="mailList" class="mail-list"></div></div></section>
+    </main>
+  </div>
+  <dialog id="genericModal"><form method="dialog" class="modal-card" id="modalForm"><div class="modal-head"><h3 id="modalTitle">إضافة</h3><button value="cancel" class="icon-btn">✕</button></div><div id="modalFields"></div><div class="form-actions"><button type="button" class="btn primary" id="modalSave">حفظ</button><button value="cancel" class="btn ghost">إلغاء</button></div></form></dialog>
+  <div class="toast" id="toast"></div>
+  <script src="script.js"></script>
+  <script src="home.js"></script>
+</body>
+</html>
