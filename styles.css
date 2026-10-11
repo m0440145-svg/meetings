@@ -9,3 +9,5 @@
 .auth-card small{display:block;margin-top:12px;color:#b64242}
 .auth-card .btn{width:100%}
 .attendance-card{margin-bottom:14px}
+.auth-links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:6px}
+#otpLoginBtn{width:100%}

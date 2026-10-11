@@ -16,34 +16,91 @@
   async function session() { return (await db.auth.getSession()).data.session; }
   async function profile(userId) { const {data} = await db.from('profiles').select('*').eq('id', userId).single(); return data; }
 
+  // رسائل Supabase تصل بالإنجليزية؛ نترجم الشائع منها ونشرح سببه للمستخدم
+  function authError(error) {
+    const msg = error?.message || '';
+    const map = [
+      [/invalid login credentials/i, 'البريد أو كلمة المرور غير صحيحة، أو لا يوجد حساب بهذا البريد بعد. أنشئ حسابًا جديدًا أو استخدم "نسيت كلمة المرور".'],
+      [/email not confirmed/i, 'لم يتم تأكيد البريد بعد. افتح رسالة التأكيد في بريدك (وتحقق من مجلد الرسائل غير المرغوبة).'],
+      [/user already registered/i, 'يوجد حساب بهذا البريد مسبقًا. سجّل الدخول أو استخدم "نسيت كلمة المرور".'],
+      [/signups not allowed|signup is disabled/i, 'إنشاء الحسابات مغلق. تواصل مع مدير المنصة لإضافتك.'],
+      [/password should be at least/i, 'كلمة المرور قصيرة جدًا.'],
+      [/rate limit|too many requests|security purposes/i, 'محاولات كثيرة خلال وقت قصير. انتظر دقيقة ثم حاول مجددًا.'],
+      [/unable to validate email|invalid email/i, 'صيغة البريد الإلكتروني غير صحيحة.']
+    ];
+    return (map.find(([re]) => re.test(msg)) || [null, msg || 'حدث خطأ غير متوقع'])[1];
+  }
+  const siteUrl = () => location.origin + location.pathname;
+
   function loginScreen() {
     if (q('#authGate')) return;
     const gate = document.createElement('div'); gate.id = 'authGate'; gate.innerHTML = `
-      <div class="auth-card"><img src="assets/logo.svg" alt="شعار جمعية الإحسان"><h2>منصة الاجتماعات</h2><p>تسجيل الدخول إلى حسابك المؤسسي</p>
-      <form id="authForm"><label>البريد الإلكتروني<input name="email" type="email" required></label><label>كلمة المرور<input name="password" type="password" minlength="6" required></label><button class="btn primary" type="submit">تسجيل الدخول</button></form>
-      <button class="link-btn" id="signupToggle">إنشاء أول حساب / حساب جديد</button><small id="authMsg"></small></div>`;
+      <div class="auth-card"><img src="assets/logo.svg" alt="شعار جمعية الإحسان" onerror="this.remove()"><h2>منصة الاجتماعات</h2><p>تسجيل الدخول إلى حسابك المؤسسي</p>
+      <form id="authForm"></form>
+      <div class="auth-links"><button class="link-btn" type="button" id="signupToggle">إنشاء حساب جديد</button><button class="link-btn" type="button" id="resetToggle">نسيت كلمة المرور</button><button class="link-btn" type="button" id="loginToggle" hidden>العودة لتسجيل الدخول</button></div><small id="authMsg"></small></div>`;
     document.body.appendChild(gate);
-    q('#authForm').onsubmit = async e => {
+    const form = q('#authForm'), msg = t => { q('#authMsg').textContent = t; };
+    const mode = (name, html, submit) => {
+      form.innerHTML = html;
+      form.onsubmit = async e => {
+        e.preventDefault();
+        const btn = form.querySelector('[type=submit]');
+        btn.disabled = true;
+        try { await submit(new FormData(form)); } finally { btn.disabled = false; }
+      };
+      q('#signupToggle').hidden = name === 'signup';
+      q('#resetToggle').hidden = name === 'reset';
+      q('#loginToggle').hidden = name === 'login';
+      q('#otpLoginBtn')?.toggleAttribute('hidden', name !== 'login');
+      msg('');
+    };
+    const login = () => mode('login', `<label>البريد الإلكتروني<input name="email" type="email" required></label><label>كلمة المرور<input name="password" type="password" minlength="6" required></label><button class="btn primary" type="submit">تسجيل الدخول</button>`, async f => {
+      const {error} = await db.auth.signInWithPassword({email: f.get('email').trim(), password: f.get('password')});
+      if (error) return msg(authError(error));
+      msg('تم تسجيل الدخول');
+      location.reload();
+    });
+    q('#loginToggle').onclick = login;
+    q('#signupToggle').onclick = () => mode('signup', `<label>الاسم الكامل<input name="full_name" required></label><label>البريد الإلكتروني<input name="email" type="email" required></label><label>كلمة المرور<input name="password" type="password" minlength="8" required></label><button class="btn primary" type="submit">إنشاء الحساب</button>`, async f => {
+      const {data, error} = await db.auth.signUp({email: f.get('email').trim(), password: f.get('password'), options: {data: {full_name: f.get('full_name')}, emailRedirectTo: siteUrl()}});
+      if (error) return msg(authError(error));
+      // عند تفعيل حماية تعداد الحسابات يعيد Supabase مستخدمًا بلا هويات إذا كان البريد مسجلًا مسبقًا
+      if (data?.user && !data.user.identities?.length) return msg(authError({message: 'User already registered'}));
+      msg(data?.session ? 'تم إنشاء الحساب.' : 'تم إنشاء الحساب. افتح رسالة التأكيد في بريدك ثم سجّل الدخول.');
+      if (data?.session) location.reload();
+    });
+    q('#resetToggle').onclick = () => mode('reset', `<label>البريد الإلكتروني<input name="email" type="email" required></label><button class="btn primary" type="submit">إرسال رابط إعادة التعيين</button>`, async f => {
+      const {error} = await db.auth.resetPasswordForEmail(f.get('email').trim(), {redirectTo: siteUrl()});
+      msg(error ? authError(error) : 'إذا كان البريد مسجلًا فستصلك رسالة فيها رابط لتعيين كلمة مرور جديدة.');
+    });
+    login();
+  }
+
+  // عند فتح رابط "نسيت كلمة المرور" من البريد يُطلب من المستخدم تعيين كلمة مرور جديدة
+  function passwordRecoveryScreen() {
+    q('#authGate')?.remove();
+    const gate = document.createElement('div'); gate.id = 'authGate'; gate.innerHTML = `
+      <div class="auth-card"><h2>تعيين كلمة مرور جديدة</h2>
+      <form id="recoveryForm"><label>كلمة المرور الجديدة<input name="password" type="password" minlength="8" required></label><label>تأكيد كلمة المرور<input name="confirm" type="password" minlength="8" required></label><button class="btn primary" type="submit">حفظ كلمة المرور</button></form><small id="authMsg"></small></div>`;
+    document.body.appendChild(gate);
+    q('#recoveryForm').onsubmit = async e => {
       e.preventDefault();
       const f = new FormData(e.target);
-      const {error} = await db.auth.signInWithPassword({email: f.get('email'), password: f.get('password')});
-      q('#authMsg').textContent = error ? error.message : 'تم تسجيل الدخول';
-      if (!error) location.reload();
-    };
-    q('#signupToggle').onclick = () => {
-      q('#authForm').innerHTML = `<label>الاسم الكامل<input name="full_name" required></label><label>البريد الإلكتروني<input name="email" type="email" required></label><label>كلمة المرور<input name="password" type="password" minlength="8" required></label><button class="btn primary" type="submit">إنشاء الحساب</button>`;
-      q('#authForm').onsubmit = async e => {
-        e.preventDefault();
-        const f = new FormData(e.target);
-        const {error} = await db.auth.signUp({email: f.get('email'), password: f.get('password'), options: {data: {full_name: f.get('full_name')}}});
-        q('#authMsg').textContent = error ? error.message : 'تم إنشاء الحساب. إذا كان تأكيد البريد مفعلاً، افتح رسالة التأكيد ثم سجل الدخول.';
-      };
+      if (f.get('password') !== f.get('confirm')) { q('#authMsg').textContent = 'كلمتا المرور غير متطابقتين.'; return; }
+      const {error} = await db.auth.updateUser({password: f.get('password')});
+      if (error) { q('#authMsg').textContent = authError(error); return; }
+      q('#authMsg').textContent = 'تم تحديث كلمة المرور.';
+      history.replaceState(null, '', siteUrl());
+      location.reload();
     };
   }
+  let recovering = /type=recovery/.test(location.hash);
+  db.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') { recovering = true; passwordRecoveryScreen(); } });
 
   async function hydrateUser() {
     const s = await session();
     if (!s) { loginScreen(); return false; }
+    if (recovering) { passwordRecoveryScreen(); return false; }
     q('#authGate')?.remove();
     const p = await profile(s.user.id);
     const btn = q('.profile-btn');
