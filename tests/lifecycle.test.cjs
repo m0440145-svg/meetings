@@ -8,7 +8,7 @@ test('meeting lifecycle, central data and physical restore in isolated PostgreSQ
  let mid,vid,minute,poll;
  try{
  await db.exec(fs.readFileSync('tests/fixtures/lifecycle.sql','utf8'));
- for(const p of ['access-hardening','meeting-lifecycle','central-workspaces'])await db.exec(fs.readFileSync(`database/proposals/${p}.sql`,'utf8'));
+ await db.exec(fs.readFileSync(require('../tools/assemble-migration.cjs').target(),'utf8')); // Test the exact deployment artifact in one transaction.
  await login(1);
  await t.test('new meeting requires explicit quorum',async()=>{
   await assert.rejects(q("insert into meetings(title,created_by) values('Test',$1)",[uid(1)]),/Quorum/);
@@ -28,6 +28,20 @@ test('meeting lifecycle, central data and physical restore in isolated PostgreSQ
   await assert.rejects(q('update meetings set quorum_percent=1 where id=$1',[mid]),/frozen/);
   await assert.rejects(q("insert into votes(meeting_id,question,status) values($1,'Bypass','مفتوح')",[mid]),/row-level security/);
   vid=(await q("select open_meeting_vote($1,'Approve decision',true) as id",[mid])).rows[0].id;
+ });
+ await t.test('loss of quorum rejects ballot without leaving a receipt',async()=>{
+  await login(1);await q("select record_meeting_attendance($1,$2,'غائب')",[mid,uid(2)]);
+  await assert.rejects(q("select cast_meeting_vote($1,'موافق')",[vid]),/quorum incomplete/);
+  await db.exec('reset role');assert.equal((await q('select count(*)::int n from meeting_private.ballot_receipts')).rows[0].n,0);
+  await login(1);await q("select record_meeting_attendance($1,$2,'حاضر')",[mid,uid(2)]);
+ });
+ await t.test('invalid choices and partial poll failures roll back atomically',async()=>{
+  await assert.rejects(q('select cast_meeting_vote($1,$2)',[vid,'invalid']),/Invalid choice/);
+  await assert.rejects(q("select create_meeting_poll($1,'Partial failure',$2)",[mid,['2026-11-01T09:00:00Z',null]]),/null value/);
+  assert.equal((await q('select count(*)::int n from schedule_polls')).rows[0].n,0);
+  await db.exec('reset role');assert.equal((await q('select count(*)::int n from meeting_private.ballots')).rows[0].n,0);
+  assert.equal((await q('select count(*)::int n from meeting_private.ballot_receipts')).rows[0].n,0);
+  await login(1);
  });
  await t.test('eligible member casts once; outsiders and direct writes denied',async()=>{
   await login(2);await q("select cast_meeting_vote($1,'موافق')",[vid]);
