@@ -101,8 +101,16 @@
     const s = await session();
     if (!s) { loginScreen(); return false; }
     if (recovering) { passwordRecoveryScreen(); return false; }
+    const verified = await db.auth.getUser();
+    if (verified.error || !verified.data.user) { await db.auth.signOut(); loginScreen(); return false; }
+    const p = await profile(verified.data.user.id);
+    if (!p || p.is_active !== true) {
+      await db.auth.signOut();
+      loginScreen();
+      notify('الحساب غير مفعّل أو تعذر التحقق من صلاحياته. تواصل مع مدير المنصة.');
+      return false;
+    }
     q('#authGate')?.remove();
-    const p = await profile(s.user.id);
     const btn = q('.profile-btn');
     if (btn) {
       btn.innerHTML = `<span class="avatar">${esc((p?.full_name || s.user.email)[0])}</span><span>${esc(p?.full_name || s.user.email)}</span>`;
@@ -319,3 +327,4 @@
   // يُحمَّل هذا الملف ديناميكيًا بعد اكتمال الصفحة، لذا لا يمكن الاعتماد على DOMContentLoaded وحده
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
+

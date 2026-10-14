@@ -29,7 +29,7 @@
       const r = x.vote_responses || [], a = r.filter(z => z.choice === 'موافق').length, n = r.filter(z => z.choice === 'غير موافق').length, s = r.filter(z => z.choice === 'ممتنع').length;
       return `<article><h3>${esc(x.question)}</h3><div class="meta">النوع: ${esc(x.vote_type)} • النصاب المطلوب: ${x.quorum_required || '—'} • الأصوات: ${r.length}</div><p>موافق ${a} | غير موافق ${n} | ممتنع ${s}</p><div class="form-actions"><button class="btn small primary db-vote" data-id="${x.id}" data-choice="موافق">موافق</button><button class="btn small ghost db-vote" data-id="${x.id}" data-choice="غير موافق">غير موافق</button><button class="btn small ghost db-vote" data-id="${x.id}" data-choice="ممتنع">ممتنع</button></div></article>`;
     }).join('') || '<article>لا توجد تصويتات.</article>';
-    if ($('#minutesList')) $('#minutesList').innerHTML = (m.data || []).map(x => `<article><h3>${esc(x.meetings?.title || 'محضر')}</h3><span class="tag">${esc(x.status)}</span><p>${esc(String(x.content ?? '').slice(0, 220))}</p><div class="meta">التوقيعات: ${(x.signatures || []).length}</div><button class="btn small primary sign-minute" data-id="${x.id}">توقيع المحضر</button></article>`).join('') || '<article>لا توجد محاضر.</article>';
+    if ($('#minutesList')) $('#minutesList').innerHTML = (m.data || []).map(x => `<article><h3>${esc(x.meetings?.title || 'محضر')}</h3><span class="tag">${esc(x.status)}</span><p>${esc(String(x.content ?? '').slice(0, 220))}</p><div class="meta">التوقيعات: ${(x.signatures || []).length}</div><button class="btn small primary sign-minute" data-id="${x.id}">التوقيع الرسمي — متطلبات التفعيل</button></article>`).join('') || '<article>لا توجد محاضر.</article>';
     const signed = (m.data || []).filter(x => (x.signatures || []).length).length;
     ['#statSigned', '#homeMinutes'].forEach(id => { if ($(id)) $(id).textContent = signed; });
     if ($('#invitationsList')) $('#invitationsList').innerHTML = (inv.data || []).map(x => `<div class="list-item"><strong>${esc(x.meetings?.title)}</strong><span>${esc(x.email || x.phone || 'عضو')}</span><span class="tag">${esc(x.status)}</span></div>`).join('') || '<div class="list-item">لا توجد دعوات.</div>';
@@ -80,13 +80,10 @@
       if (error) return toast(error.message);
       await d.from('ai_documents').insert({entity_type: 'minute', entity_id: data.id, title: 'محضر اجتماع', content});
       await log(d, 'حفظ محضر', 'minute', data.id);
-      let msg = 'تم حفظ المحضر وأرشفته للبحث';
+      let msg = 'تم حفظ المحضر كمسودة؛ لم يتم توقيعه رسميًا';
       const c = $('#signatureCanvas');
       if (c && !canvasIsBlank(c)) {
-        const blob = await new Promise(r => c.toBlob(r, 'image/png'));
-        const err = await uploadSignature(d, u, data.id, blob, 'png');
-        msg = err ? `تم حفظ المحضر، لكن تعذر حفظ التوقيع: ${err.message}` : 'تم حفظ المحضر وتوقيعه';
-        c.getContext('2d').clearRect(0, 0, c.width, c.height);
+        msg += '. الرسم اليدوي ليس توقيعًا رسميًا ولم يُرسل للاعتماد';
       }
       form.reset();
       toast(msg);
@@ -106,12 +103,7 @@
       }
       b = e.target.closest('.sign-minute');
       if (b) {
-        const u = await U(d);
-        const blob = new Blob([`SIGNED:${u.id}:${b.dataset.id}:${new Date().toISOString()}`], {type: 'text/plain'});
-        const err = await uploadSignature(d, u, b.dataset.id, blob, 'sig');
-        if (err) return toast(err.message);
-        toast('تم توثيق التوقيع إلكترونيًا');
-        load(d);
+        toast('التوقيع الرسمي غير مربوط بعد. يتطلب تفعيل API آمن مع ehsan.parq.sa والتحقق من نتيجة التوقيع. لم يتم توقيع المحضر.');
         return;
       }
       b = e.target.closest('.open-secure-file');
@@ -186,3 +178,4 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+

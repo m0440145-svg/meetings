@@ -1,6 +1,14 @@
 {
   "name": "meetings-readiness",
   "private": true,
-  "scripts": { "test": "node --test tests/*.test.cjs", "build:staging": "node tools/build-staging.cjs" },
-  "engines": { "node": ">=22" }
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "build:staging": "node tools/build-staging.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.9"
+  }
 }
