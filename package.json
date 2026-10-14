@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.cjs",
-    "build:staging": "node tools/build-staging.cjs"
+    "build:staging": "node tools/build-staging.cjs",
+    "build": "node tools/build-hosting.cjs",
+    "start": "node tools/serve.cjs"
   },
   "engines": {
     "node": ">=22"

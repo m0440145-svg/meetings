@@ -138,13 +138,16 @@
         const members = (await d.from('committee_members').select('user_id,profiles(id,phone)').eq('committee_id', ms.committee_id)).data || [];
         const u = await U(d);
         for (const x of members) {
-          await d.from('meeting_invitations').insert({meeting_id, user_id: x.user_id, phone: x.profiles?.phone, status: 'مجدولة', created_by: u.id});
-          if (x.profiles?.phone) await d.from('delivery_jobs').insert({channel: 'whatsapp', recipient: x.profiles.phone, template: 'meeting_invitation', payload: {meeting_id, title: ms.title, date: ms.gregorian_date, time: ms.start_time}, status: 'pending'});
-          await d.from('notifications').insert({user_id: x.user_id, title: 'دعوة اجتماع', body: `${ms.title} — ${ms.gregorian_date} ${ms.start_time || ''}`});
+          const invitation = await d.from('meeting_invitations').insert({meeting_id, user_id: x.user_id, phone: x.profiles?.phone, status: 'مجدولة', created_by: u.id});
+          if (invitation.error) throw invitation.error;
+          const notification = await d.from('notifications').insert({user_id: x.user_id, title: 'دعوة اجتماع', body: `${ms.title} — ${ms.gregorian_date} ${ms.start_time || ''}`});
+          if (notification.error) throw notification.error;
         }
         await log(d, 'إنشاء دعوات الاجتماع', 'meeting', meeting_id, {count: members.length});
-        toast(`تم إنشاء ${members.length} دعوة وإضافتها لطابور الإرسال`);
+        toast(`تم إنشاء ${members.length} دعوة داخلية. البريد وواتساب غير مفعّلين`);
         load(d);
+      } catch (error) {
+        toast('تعذر إكمال الدعوات؛ قد تكون بعض الدعوات حُفظت. راجع السجل قبل إعادة المحاولة: ' + error.message);
       } finally {
         btn.disabled = false;
       }
