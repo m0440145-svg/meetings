@@ -11,7 +11,7 @@ test('hosting config rejects missing and secret credentials',()=>{
 test('build allowlists public assets and clears stale files',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'meetings-build-'));
  try{
-  for(const f of ['index.html','404.html','.nojekyll','styles.css','script.js','home.js','nav-fix.js','supabase-app.js','advanced-supabase.js','production-features.js'])fs.writeFileSync(path.join(dir,f),'fixture');
+  for(const f of ['index.html','404.html','.nojekyll','styles.css','script.js','home.js','nav-fix.js','supabase-app.js','advanced-supabase.js','production-features.js','central-workspaces.js'])fs.writeFileSync(path.join(dir,f),'fixture');
   fs.mkdirSync(path.join(dir,'assets'));fs.writeFileSync(path.join(dir,'.env'),'secret');
   fs.mkdirSync(path.join(dir,'dist'));fs.writeFileSync(path.join(dir,'dist','stale.txt'),'stale');
   const out=build({...env,SECRET_KEY:'must-not-appear'},dir);

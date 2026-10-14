@@ -45,7 +45,7 @@ for each row execute function meeting_private.protect_profile();
 create policy enterprise_active_profile on public.profiles as restrictive for all to authenticated
 using (meeting_private.actor_role() is not null) with check (meeting_private.actor_role() is not null);
 create policy enterprise_meeting_read on public.meetings as restrictive for select to authenticated
-using (meeting_private.can_read_meeting(id));
+using ((created_by=auth.uid() and meeting_private.actor_role() is not null) or meeting_private.can_read_meeting(id));
 create policy enterprise_meeting_insert on public.meetings as restrictive for insert to authenticated
 with check (created_by=auth.uid() and meeting_private.actor_role() in ('admin','board_chair','secretary')
 and (meeting_private.actor_role()='admin' or committee_id is null or exists
@@ -102,8 +102,13 @@ create policy enterprise_file_delete on storage.objects as restrictive for delet
 using (bucket_id not in ('meeting-files','signatures'));
 create policy enterprise_profile_update on public.profiles as restrictive for update to authenticated
 using (id=auth.uid()) with check (id=auth.uid());
+create function meeting_private.can_read_committee(cid uuid) returns boolean language sql stable security definer set search_path='' as $$
+select auth.uid() is not null and meeting_private.actor_role() is not null and (meeting_private.actor_role()='admin' or exists(select 1 from public.committee_members c where c.committee_id=cid and c.user_id=auth.uid()))
+$$;
+revoke all on function meeting_private.can_read_committee(uuid) from public,anon;
+grant execute on function meeting_private.can_read_committee(uuid) to authenticated;
 create policy enterprise_committee_membership on public.committee_members as restrictive for all to authenticated
-using (user_id=auth.uid() or meeting_private.actor_role()='admin')
+using (meeting_private.can_read_committee(committee_id))
 with check (meeting_private.actor_role()='admin');
 create policy enterprise_committee_membership_delete on public.committee_members as restrictive for delete to authenticated
 using (meeting_private.actor_role()='admin');

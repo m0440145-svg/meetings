@@ -143,7 +143,7 @@
     const rows = meetingsCache.filter(m => (status === 'all' || m.status === status) && `${m.title} ${m.committees?.name || ''}`.toLowerCase().includes(term));
     setHtml('#meetingsTable', rows.map(m => {
       const url = safeUrl(m.meeting_url);
-      return `<tr><td>${esc(m.title)}</td><td>${esc(m.committees?.name || '')}</td><td>${esc(m.gregorian_date)}</td><td>${esc(m.start_time?.slice(0, 5) || '')}</td><td>${esc(m.mode)}</td><td><span class="status-pill">${esc(m.status)}</span></td><td>${m.attachments?.[0]?.count || 0}</td><td>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">فتح الرابط</a>` : '—'}</td></tr>`;
+      return `<tr><td>${esc(m.title)}</td><td>${esc(m.committees?.name || '')}</td><td>${esc(m.gregorian_date)}</td><td>${esc(m.start_time?.slice(0, 5) || '')}</td><td>${esc(m.mode)}</td><td><span class="status-pill">${esc(m.status)}</span><div>النصاب: ${esc(m.quorum_percent??'غير محدد')}%</div></td><td>${m.attachments?.[0]?.count || 0}</td><td>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">فتح الرابط</a>` : '—'}</td></tr>`;
     }).join('') || '<tr><td colspan="8">لا توجد اجتماعات مطابقة.</td></tr>');
   }
 
@@ -165,7 +165,9 @@
     const s = await session();
     if (!s) return;
     const f = new FormData(form);
-    const payload = {title: f.get('title'), committee_id: f.get('committee'), gregorian_date: f.get('date'), hijri_date: f.get('hijri'), start_time: f.get('time'), end_time: f.get('endTime') || null, mode: f.get('mode'), location: f.get('location'), platform: f.get('platform'), meeting_url: f.get('meetingUrl') || null, description: f.get('description'), created_by: s.user.id, status: 'مجدول'};
+    const quorumPercent=Number(f.get('quorumPercent'));
+    if(!quorumPercent || quorumPercent>100) return notify('نسبة النصاب إلزامية ويجب أن تكون أكبر من صفر وحتى 100');
+    const payload = {quorum_percent:quorumPercent,title: f.get('title'), committee_id: f.get('committee'), gregorian_date: f.get('date'), hijri_date: f.get('hijri'), start_time: f.get('time'), end_time: f.get('endTime') || null, mode: f.get('mode'), location: f.get('location'), platform: f.get('platform'), meeting_url: f.get('meetingUrl') || null, description: f.get('description'), created_by: s.user.id, status: 'مجدول'};
     const {data, error} = await db.from('meetings').insert(payload).select().single();
     if (error) { notify('تعذر حفظ الاجتماع: ' + error.message); return; }
     const failures = [];
@@ -191,6 +193,7 @@
     setHtml('#agendaRows', '');
     window.addAgendaRow?.();
     await loadMeetings();
+    document.dispatchEvent(new Event('meetings-changed'));
     goTo('meetings');
   }
 

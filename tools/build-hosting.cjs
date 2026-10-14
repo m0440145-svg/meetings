@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const files = ['index.html','404.html','.nojekyll','styles.css','script.js','home.js','nav-fix.js','supabase-app.js','advanced-supabase.js','production-features.js'];
+const files = ['index.html','404.html','.nojekyll','styles.css','script.js','home.js','nav-fix.js','supabase-app.js','advanced-supabase.js','production-features.js','central-workspaces.js'];
 function hostingConfig(env) {
   let url;
   try { url = new URL(env.SUPABASE_URL); } catch { throw new Error('SUPABASE_URL is required'); }

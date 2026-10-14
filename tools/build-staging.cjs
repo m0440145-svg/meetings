@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const PRODUCTION_REF = 'hmauemcowlaqujeatbaz';
-const files = ['index.html', 'styles.css', 'script.js', 'home.js', 'nav-fix.js', 'supabase-app.js', 'advanced-supabase.js', 'production-features.js', '404.html', '.nojekyll'];
+const files = ['index.html', 'styles.css', 'script.js', 'home.js', 'nav-fix.js', 'supabase-app.js', 'advanced-supabase.js', 'production-features.js','central-workspaces.js', '404.html', '.nojekyll'];
 function stagingConfig(env) {
   let url;
   try { url = new URL(env.STAGING_SUPABASE_URL); } catch { throw new Error('STAGING_SUPABASE_URL is required'); }
