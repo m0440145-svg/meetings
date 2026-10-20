@@ -22,8 +22,10 @@ jobs:
       - name: Prepare website
         run: |
           mkdir -p public
-          cp index.html styles.css script.js home.js nav-fix.js supabase-config.js supabase-app.js advanced-supabase.js production-features.js 404.html .nojekyll public/
+          cp index.html styles.css script.js home.js nav-fix.js supabase-config.js supabase-app.js advanced-supabase.js production-features.js platform-settings.js nav-groups.js member-space.js insights.js governance.js development.js archive-reports.js reminders.js scheduler.js landing.js banners-admin.js decisions.js xlsx-lite.js dm-core.js dm-views.js dm-detail.js dm-admin.js 404.html .nojekyll public/
           cp -R assets public/assets
+          # رقم إصدار للملفات يمنع بقاء نسخة قديمة في كاش المتصفح بعد كل نشر
+          sed -i "s/__BUILD__/${GITHUB_SHA::8}/g" public/index.html public/home.js
 
       - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

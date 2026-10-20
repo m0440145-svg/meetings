@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>PGlite test harness</title>
+<body><pre id="out">loading...</pre>
+<script type="module">
+import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.10/dist/index.js';
+window.PGlite = PGlite;
+window.ready = (async () => { const db = new PGlite(); await db.waitReady; window.pg = db; document.getElementById('out').textContent = 'ready'; return true; })().catch(e => { document.getElementById('out').textContent = 'ERR ' + e; throw e; });
+</script>
+<script src="harness.js"></script>
+<script src="decisions.test.js"></script>
+<script src="decisions2.test.js"></script></body>
