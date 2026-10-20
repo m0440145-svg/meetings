@@ -1,0 +1,42 @@
+<!doctype html><html lang="ar" dir="rtl" data-backend="supabase"><head><meta charset="utf-8"><title>اختبار شامل لوحدة القرارات (PGlite)</title>
+<link rel="stylesheet" href="../styles.css"></head><body>
+<div class="app-shell"><nav id="sideNav"></nav><main class="main-area"><h1 id="pageTitle"></h1><section class="view active" id="view-home"><p id="e2eStatus">جارٍ التحميل…</p></section></main></div>
+<script type="module">
+import { PGlite } from 'https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.5.10/dist/index.js';
+window.PGlite = PGlite; window.ready = Promise.resolve(true);
+</script>
+<script src="harness.js"></script><script src="decisions.test.js"></script><script src="supabase-shim.js"></script>
+<script>
+// مفسّرات تجعل مخرجات PGlite كمخرجات PostgREST (نصوص للتواريخ، أرقام للأعداد الكبيرة)
+window.E2E = {
+  uid: null,
+  parsers: {1082: v => v, 1083: v => v, 1114: v => v.replace(' ', 'T'), 1184: v => v.replace(' ', 'T').replace(/\+00$/, 'Z'), 20: v => Number(v)},
+  async start() {
+    const s = await resetDb(BASE, {parsers: E2E.parsers}); if (s.includes('FAIL')) throw new Error(s);
+    await DMT.fixtures();
+    window.ehsanActivateView = name => { document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name)); };
+    window.ehsanDB = makeShim(window.pg, () => E2E.uid);
+    window.showToast = m => { (window.__toasts ||= []).push(m); };
+    for (const f of ['../insights.js', '../xlsx-lite.js', '../dm-core.js', '../dm-views.js', '../dm-detail.js', '../dm-admin.js']) {
+      await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = f + '?x=' + Date.now(); sc.onload = res; sc.onerror = () => rej(new Error('فشل تحميل ' + f)); document.body.append(sc); });
+    }
+    document.getElementById('e2eStatus').textContent = 'جاهز';
+    return true;
+  },
+  async as(uid) { E2E.uid = uid; DM.refs.loadedAt = 0; DM.ready = DM.init(); await DM.ready; },
+  sleep: ms => new Promise(r => setTimeout(r, ms)),
+  async until(fn, ms = 6000) { const t0 = Date.now(); while (Date.now() - t0 < ms) { try { const v = await fn(); if (v) return v; } catch (e) { /* أعد المحاولة */ } await E2E.sleep(60); } throw new Error('انتهت المهلة'); },
+  dlg: () => document.querySelector('dialog.dm-dialog[open]'),
+  async fill(values) {
+    const d = await E2E.until(E2E.dlg);
+    for (const [k, v] of Object.entries(values)) {
+      const el = d.querySelector('#dmf_' + k);
+      if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true})); continue; }
+      const boxes = [...d.querySelectorAll('.dm-multi input')]; if (boxes.length) { boxes.forEach(b => { b.checked = [].concat(v).includes(b.value); }); }
+    }
+  },
+  async submit() { const d = E2E.dlg(); d.querySelector('form').requestSubmit(); await E2E.until(() => !E2E.dlg() || d.querySelector('.dm-err')?.textContent, 8000); const err = d.isConnected ? d.querySelector('.dm-err')?.textContent : ''; if (err) { throw new Error('خطأ في الحوار: ' + err); } await E2E.sleep(120); },
+  async clickAct(act, root = document.getElementById('view-dm-detail')) { const b = await E2E.until(() => root.querySelector(`[data-act="${act}"]:not([disabled])`)); b.click(); await E2E.sleep(100); },
+  text: id => document.getElementById(id)?.innerText || ''
+};
+</script></body></html>

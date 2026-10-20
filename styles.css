@@ -11,3 +11,41 @@
 .attendance-card{margin-bottom:14px}
 .auth-links{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:6px}
 #otpLoginBtn{width:100%}
+
+/* بيانات المنصة القابلة للتحكم اليدوي */
+[hidden]{display:none!important}
+.pre-wrap{white-space:pre-line}
+#goalsList{margin:0;padding-inline-start:22px;display:grid;gap:6px}
+#brandingForm .form-grid{margin-top:14px}
+#brandingForm .logo{height:54px}
+#brandingForm .form-actions{align-items:center}
+#brandingForm input[type=color]{height:42px;padding:4px}
+
+.stat-text{font-size:18px!important}
+.check-grid{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.check-grid legend{font-weight:700;font-size:13px;padding:0 6px}
+.check-grid label{display:flex;align-items:center;gap:6px;font-weight:400}
+.check-grid input{width:auto}
+.steps{margin:0;padding-inline-start:20px;display:grid;gap:8px}
+.stage-track{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.stage{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;background:#fff;color:#84766e}
+.stage.done{background:#e9f6ef;color:var(--success);border-color:#bfe3cf}
+.stage.current{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border-color:transparent;font-weight:800}
+.item-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+@media(max-width:520px){.check-grid{grid-template-columns:1fr 1fr}}
+
+/* الحوكمة والتطوير والتقارير */
+.bars{display:grid;gap:8px}
+.bar-row{display:grid;grid-template-columns:90px 1fr 34px;gap:8px;align-items:center;font-size:12px}
+.bar-track{background:var(--bg);border-radius:999px;height:12px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:999px;min-width:2px}
+.bar-fill.low{background:var(--danger)}
+.bar-fill.mid{background:#d9a016}
+.cell-ok{color:var(--success);font-weight:800}
+.cell-bad{color:var(--danger);font-weight:800}
+.cell-na{color:#a29790}
+.cand{display:flex;align-items:center;gap:8px;padding:6px 0;font-weight:400}
+.cand input{width:auto}
+.winner{background:#e9f6ef;border-radius:8px;padding:2px 8px}
+.card-head select{width:auto}
+

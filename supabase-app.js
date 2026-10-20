@@ -11,6 +11,19 @@
   const setText = (sel, v) => { const el = q(sel); if (el) el.textContent = v; };
   const setHtml = (sel, v) => { const el = q(sel); if (el) el.innerHTML = v; };
   const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
+  // اسم آمن لمفتاح التخزين: Supabase Storage يرفض غالبًا الأسماء العربية والرموز الخاصة، ويُحفظ الاسم الأصلي في جدول attachments
+  const safeFileKey = name => {
+    const m = /\.([A-Za-z0-9]{1,10})$/.exec(name || '');
+    return crypto.randomUUID() + (m ? '.' + m[1].toLowerCase() : '');
+  };
+  // خطأ تحميل: نُظهره مرة واحدة لكل مصدر بدل تجاهله فيبدو الجدول فارغًا
+  const reported = new Set();
+  const loadFailed = (what, error) => {
+    console.error(what, error);
+    if (reported.has(what)) return;
+    reported.add(what);
+    notify(`تعذر تحميل ${what}: ${error?.message || 'خطأ في الاتصال'}`);
+  };
   const goTo = v => window.ehsanActivateView ? window.ehsanActivateView(v) : window.showView?.(v);
 
   async function session() { return (await db.auth.getSession()).data.session; }
@@ -20,7 +33,8 @@
   function authError(error) {
     const msg = error?.message || '';
     const map = [
-      [/invalid login credentials/i, 'البريد أو كلمة المرور غير صحيحة، أو لا يوجد حساب بهذا البريد بعد. أنشئ حسابًا جديدًا أو استخدم "نسيت كلمة المرور".'],
+      // رسالة موحدة لا تكشف إن كان البريد مسجلًا (تفادي تعداد الحسابات)
+      [/invalid login credentials/i, 'البريد الإلكتروني أو كلمة المرور غير صحيحة. إن نسيت كلمة المرور فاستخدم "نسيت كلمة المرور".'],
       [/email not confirmed/i, 'لم يتم تأكيد البريد بعد. افتح رسالة التأكيد في بريدك (وتحقق من مجلد الرسائل غير المرغوبة).'],
       [/user already registered/i, 'يوجد حساب بهذا البريد مسبقًا. سجّل الدخول أو استخدم "نسيت كلمة المرور".'],
       [/signups not allowed|signup is disabled/i, 'إنشاء الحسابات مغلق. تواصل مع مدير المنصة لإضافتك.'],
@@ -35,10 +49,11 @@
   function loginScreen() {
     if (q('#authGate')) return;
     const gate = document.createElement('div'); gate.id = 'authGate'; gate.innerHTML = `
-      <div class="auth-card"><img src="assets/logo.svg" alt="شعار جمعية الإحسان" onerror="this.remove()"><h2>منصة الاجتماعات</h2><p>تسجيل الدخول إلى حسابك المؤسسي</p>
+      <div class="auth-card"><img src="assets/logo.svg" alt="شعار جمعية الإحسان" data-brand-logo><h2 data-brand="platform_name">منصة الاجتماعات</h2><p>تسجيل الدخول إلى حسابك المؤسسي</p>
       <form id="authForm"></form>
       <div class="auth-links"><button class="link-btn" type="button" id="signupToggle">إنشاء حساب جديد</button><button class="link-btn" type="button" id="resetToggle">نسيت كلمة المرور</button><button class="link-btn" type="button" id="loginToggle" hidden>العودة لتسجيل الدخول</button></div><small id="authMsg"></small></div>`;
     document.body.appendChild(gate);
+    gate.querySelector('img')?.addEventListener('error', e => e.target.remove());
     const form = q('#authForm'), msg = t => { q('#authMsg').textContent = t; };
     const mode = (name, html, submit) => {
       form.innerHTML = html;
@@ -54,9 +69,17 @@
       q('#otpLoginBtn')?.toggleAttribute('hidden', name !== 'login');
       msg('');
     };
+    // تبطيء من جهة المتصفح بعد 5 محاولات فاشلة (إرشادي فقط؛ الحماية الفعلية من حدود Supabase ومن CAPTCHA إن فُعّل)
+    let fails = 0, lockUntil = 0;
     const login = () => mode('login', `<label>البريد الإلكتروني<input name="email" type="email" required></label><label>كلمة المرور<input name="password" type="password" minlength="6" required></label><button class="btn primary" type="submit">تسجيل الدخول</button>`, async f => {
+      const wait = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (wait > 0) return msg(`محاولات كثيرة غير صحيحة. انتظر ${wait} ثانية ثم حاول مجددًا.`);
       const {error} = await db.auth.signInWithPassword({email: f.get('email').trim(), password: f.get('password')});
-      if (error) return msg(authError(error));
+      if (error) {
+        if (/invalid login credentials/i.test(error.message) && ++fails >= 5) { fails = 0; lockUntil = Date.now() + 30000; return msg('محاولات كثيرة غير صحيحة. انتظر 30 ثانية ثم حاول مجددًا.'); }
+        return msg(authError(error));
+      }
+      fails = 0;
       msg('تم تسجيل الدخول');
       location.reload();
     });
@@ -114,14 +137,15 @@
 
   async function loadCommittees() {
     const {data, error} = await db.from('committees').select('*').order('name');
-    if (error) return;
+    if (error) return loadFailed('اللجان', error);
     setHtml('#meetingCommittee', (data || []).map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join(''));
     setHtml('#committeesGrid', (data || []).map(x => `<article><div class="committee-head"><div class="member-avatar">◉</div><div><strong>${esc(x.name)}</strong><div class="meta">${esc(x.description || '')}</div></div></div></article>`).join('') || '<article>لا توجد لجان.</article>');
   }
 
   let profiles = [];
   async function loadProfiles() {
-    const {data} = await db.from('profiles').select('*').order('created_at');
+    const {data, error} = await db.from('profiles').select('*').order('created_at');
+    if (error) return loadFailed('الأعضاء', error);
     profiles = data || [];
     setText('#statMembers', profiles.length);
     setHtml('#membersGrid', profiles.map(x => `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}</div></article>`).join(''));
@@ -141,7 +165,7 @@
 
   async function loadMeetings() {
     const {data, error} = await db.from('meetings').select('*,committees(name),attachments(count)').order('gregorian_date', {ascending: true});
-    if (error) return;
+    if (error) return loadFailed('الاجتماعات', error);
     meetingsCache = data || [];
     renderMeetingsTable();
     const future = meetingsCache.filter(m => new Date(m.gregorian_date + 'T23:59:59') >= new Date());
@@ -154,9 +178,25 @@
   async function saveMeeting(e) {
     e.preventDefault();
     const form = e.currentTarget;
+    const btn = form.querySelector('[type=submit]');
+    if (btn?.disabled) return;
+    if (btn) btn.disabled = true;
+    try { await doSaveMeeting(form); }
+    catch (err) { notify('تعذر حفظ الاجتماع: ' + (err?.message || 'خطأ غير متوقع')); }
+    finally { if (btn) btn.disabled = false; }
+  }
+
+  async function doSaveMeeting(form) {
     const s = await session();
-    if (!s) return;
+    if (!s) return notify('انتهت الجلسة، سجّل الدخول من جديد');
     const f = new FormData(form);
+    const start = f.get('time'), end = f.get('endTime');
+    if (end && start && end <= start) return notify('وقت النهاية يجب أن يكون بعد وقت البداية');
+    const rawUrl = f.get('meetingUrl');
+    if (rawUrl && !safeUrl(rawUrl)) return notify('رابط الاجتماع يجب أن يبدأ بـ https://');
+    // إعدادات التنبيه والتذكير (reminders.js): نتحقق منها قبل إنشاء الاجتماع حتى لا يُحفظ ناقصًا
+    const reminder = window.ehsanReminders?.read(q('#meetingReminderBox'));
+    if (reminder?.error) return notify(reminder.error);
     const payload = {title: f.get('title'), committee_id: f.get('committee'), gregorian_date: f.get('date'), hijri_date: f.get('hijri'), start_time: f.get('time'), end_time: f.get('endTime') || null, mode: f.get('mode'), location: f.get('location'), platform: f.get('platform'), meeting_url: f.get('meetingUrl') || null, description: f.get('description'), created_by: s.user.id, status: 'مجدول'};
     const {data, error} = await db.from('meetings').insert(payload).select().single();
     if (error) { notify('تعذر حفظ الاجتماع: ' + error.message); return; }
@@ -172,23 +212,35 @@
       if (agErr) failures.push('جدول الأعمال');
     }
     for (const file of [...(q('#meetingFiles')?.files || [])]) {
-      const path = `${data.id}/${crypto.randomUUID()}-${file.name}`;
+      const path = `${data.id}/${safeFileKey(file.name)}`;
       const up = await db.storage.from('meeting-files').upload(path, file);
       const rec = up.error ? up : await db.from('attachments').insert({meeting_id: data.id, file_name: file.name, storage_path: path, mime_type: file.type, size_bytes: file.size, uploaded_by: s.user.id});
       if (rec.error) failures.push(file.name);
     }
-    notify(failures.length ? `تم حفظ الاجتماع، لكن تعذر حفظ: ${failures.join('، ')}` : 'تم حفظ الاجتماع مركزيًا وإتاحته للمستخدمين المخولين');
+    if (reminder) {
+      const remErr = await window.ehsanReminders.save(data.id, reminder);
+      if (remErr) failures.push('التذكير (' + remErr.message + ')');
+    }
+    // بند "متابعة تنفيذ قرارات الاجتماعات السابقة" (وحدة القرارات)؛ يُتجاهل بصمت إن لم تُنفَّذ الترحيلات 007/008 بعد
+    if (q('#meetingFollowup')?.checked) {
+      const fu = await db.rpc('dm_add_followup_agenda', {p_meeting: data.id});
+      if (fu.error && !/does not exist|schema cache|Could not find/i.test(fu.error.message)) failures.push('بند متابعة القرارات (' + fu.error.message + ')');
+    }
+    // عند فشل جزء نبقي النموذج كما هو حتى لا يضيع ما أدخله المستخدم، والاجتماع نفسه محفوظ مسبقًا
+    await loadMeetings();
+    if (failures.length) return notify(`تم حفظ الاجتماع، لكن تعذر حفظ: ${failures.join('، ')}. راجع الاجتماع قبل إعادة المحاولة حتى لا يتكرر.`);
+    notify('تم حفظ الاجتماع مركزيًا وإتاحته للمستخدمين المخولين');
     form.reset();
     setHtml('#filePreview', '');
     setHtml('#agendaRows', '');
     window.addAgendaRow?.();
-    await loadMeetings();
     goTo('meetings');
   }
 
   let tasksCache = [];
   async function loadTasks() {
-    const {data} = await db.from('tasks').select('*,profiles!tasks_assignee_id_fkey(full_name)').order('created_at', {ascending: false});
+    const {data, error} = await db.from('tasks').select('*,profiles!tasks_assignee_id_fkey(full_name)').order('created_at', {ascending: false});
+    if (error) return loadFailed('المهام', error);
     tasksCache = data || [];
     const open = tasksCache.filter(x => x.status !== 'مكتملة');
     ['#statTasks', '#homeTasks'].forEach(id => setText(id, open.length));
@@ -210,6 +262,7 @@
       const title = q('#mf_title').value.trim();
       if (!title) return notify('أدخل عنوان المهمة');
       const s = await session();
+      if (!s) return notify('انتهت الجلسة، سجّل الدخول من جديد');
       const {error} = await db.from('tasks').insert({title, assignee_id: q('#mf_assignee').value || null, due_date: q('#mf_due').value || null, status: 'جديدة', priority: 'متوسطة', created_by: s.user.id});
       if (error) return notify('تعذر حفظ المهمة: ' + error.message);
       notify('تمت إضافة المهمة');
@@ -233,7 +286,8 @@
   async function loadNotifications() {
     const s = await session();
     if (!s) return;
-    const {data} = await db.from('notifications').select('*').eq('user_id', s.user.id).order('created_at', {ascending: false});
+    const {data, error} = await db.from('notifications').select('*').eq('user_id', s.user.id).order('created_at', {ascending: false});
+    if (error) return loadFailed('الإشعارات', error);
     notificationsCache = data || [];
     const unread = notificationsCache.filter(x => !x.is_read).length;
     setText('#notifBadge', unread);
@@ -259,7 +313,8 @@
     const s = await session();
     if (!s) return;
     myId = s.user.id;
-    const {data} = await db.from('internal_mail').select('*,sender:profiles!internal_mail_sender_id_fkey(full_name),recipient:profiles!internal_mail_recipient_id_fkey(full_name)').or(`sender_id.eq.${s.user.id},recipient_id.eq.${s.user.id}`).order('created_at', {ascending: false});
+    const {data, error} = await db.from('internal_mail').select('*,sender:profiles!internal_mail_sender_id_fkey(full_name),recipient:profiles!internal_mail_recipient_id_fkey(full_name)').or(`sender_id.eq.${s.user.id},recipient_id.eq.${s.user.id}`).order('created_at', {ascending: false});
+    if (error) return loadFailed('البريد', error);
     mailCache = data || [];
     renderMail();
   }
@@ -277,7 +332,10 @@
     });
   }
 
+  let uiBound = false, realtimeStarted = false;
   function bindUI() {
+    if (uiBound) return; // منع تسجيل المستمعين مرتين (كل نقرة كانت ستُنفَّذ مرتين)
+    uiBound = true;
     q('#meetingForm')?.addEventListener('submit', saveMeeting);
     q('#meetingSearch')?.addEventListener('input', renderMeetingsTable);
     q('#meetingFilter')?.addEventListener('change', renderMeetingsTable);
@@ -295,13 +353,16 @@
       }
       const read = e.target.closest('.notif-read');
       if (read) {
-        await db.from('notifications').update({is_read: true}).eq('id', read.dataset.id);
+        const {error} = await db.from('notifications').update({is_read: true}).eq('id', read.dataset.id);
+        if (error) return notify(error.message);
         loadNotifications();
       }
     });
   }
 
   function realtime() {
+    if (realtimeStarted) return;
+    realtimeStarted = true;
     db.channel('ehsan-live')
       .on('postgres_changes', {event: '*', schema: 'public', table: 'meetings'}, () => loadMeetings())
       .on('postgres_changes', {event: '*', schema: 'public', table: 'tasks'}, () => loadTasks())
@@ -311,10 +372,14 @@
   }
 
   async function boot() {
-    if (!await hydrateUser()) return;
-    bindUI();
-    await Promise.all([loadCommittees(), loadProfiles(), loadMeetings(), loadTasks(), loadNotifications(), loadMail()]);
-    realtime();
+    try {
+      if (!await hydrateUser()) return;
+      bindUI();
+      await Promise.all([loadCommittees(), loadProfiles(), loadMeetings(), loadTasks(), loadNotifications(), loadMail()]);
+      realtime();
+    } catch (err) {
+      loadFailed('بيانات المنصة', err);
+    }
   }
   // يُحمَّل هذا الملف ديناميكيًا بعد اكتمال الصفحة، لذا لا يمكن الاعتماد على DOMContentLoaded وحده
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
