@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-backend="supabase" data-auth="pending">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://hmauemcowlaqujeatbaz.supabase.co https:; font-src 'self'; connect-src 'self' https://hmauemcowlaqujeatbaz.supabase.co wss://hmauemcowlaqujeatbaz.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="theme-color" content="#cf6028" />
+  <meta name="description" content="منصة جمعية الإحسان لإدارة اجتماعات مجلس الإدارة واللجان" />
+  <title>منصة الاجتماعات | جمعية الإحسان</title>
+  <style>html[data-auth=pending] .app-shell{visibility:hidden}
+  /* عبارة الإعداد: ثابتة في الكود، خط صغير مميز (خط نسخ/ثلث متوفر في النظام وإلا serif) */
+  .site-credit{margin-top:10px;padding-top:8px;border-top:1px dashed #eadfd8;text-align:center;font:600 13px/1.7 "Amiri","Noto Naskh Arabic","Sakkal Majalla","Traditional Arabic",serif;color:#a8461a;letter-spacing:.01em}
+  .site-credit .sc-mark{font-size:10px;opacity:.8;margin-inline-end:2px}</style>
+  <link rel="stylesheet" href="styles.css?v=8e189a7f" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-box" data-view-jump="home" role="button" tabindex="0" title="العودة إلى الصفحة الرئيسية">
+        <img src="assets/logo.svg" alt="شعار جمعية الإحسان" class="logo" data-brand-logo />
+        <div><strong data-brand="platform_name">منصة الاجتماعات</strong><small data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</small></div>
+      </div>
+      <nav class="side-nav" id="sideNav">
+        <button class="nav-item active" data-view="home">⌂ <span>الصفحة الرئيسية</span></button>
+        <button class="nav-item" data-view="dashboard">▣ <span>لوحة التحكم</span></button>
+        <button class="nav-item" data-view="meetings">◫ <span>الاجتماعات</span></button>
+        <button class="nav-item" data-view="new-meeting">＋ <span>اجتماع جديد</span></button>
+        <button class="nav-item" data-view="members">♙ <span>الأعضاء</span></button>
+        <button class="nav-item" data-view="committees">◉ <span>اللجان</span></button>
+        <button class="nav-item" data-view="votes">✓ <span>التصويت والنصاب</span></button>
+        <button class="nav-item" data-view="minutes">▤ <span>المحاضر والتوقيع</span></button>
+        <button class="nav-item" data-view="tasks">☑ <span>القرارات والمهام</span></button>
+        <button class="nav-item" data-view="notifications">◌ <span>الإشعارات</span></button>
+        <button class="nav-item" data-view="mail">✉ <span>البريد الوارد والصادر</span></button>
+        <button class="nav-item" data-view="about">ⓘ <span>عن المنصة</span></button>
+        <button class="nav-item" data-view="branding" id="brandingNav" hidden>✎ <span>بيانات المنصة</span></button>
+      </nav>
+      <div class="side-foot"><span data-brand="footer_text">الإصدار التجريبي 2.1<br>البيانات محفوظة مركزيًا لجميع الأعضاء</span><div class="site-credit"><span class="sc-mark" aria-hidden="true">✦</span> تصميم الموقع من إعداد محمد ناجي</div></div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-right">
+          <button class="icon-btn" id="menuBtn" aria-label="القائمة">☰</button>
+          <div><h1 id="pageTitle">الصفحة الرئيسية</h1><p id="pageSub">مرحبًا بك في منصة اجتماعات جمعية الإحسان</p></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" data-view-jump="notifications" title="الإشعارات">🔔 <span class="badge" id="notifBadge">0</span></button>
+          <button class="profile-btn"><span class="avatar">م</span><span>مدير النظام</span></button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-home">
+        <div class="hero-panel">
+          <div><span class="eyebrow" data-brand="home_eyebrow">منصة الاجتماعات والحوكمة الرقمية</span><h2 data-brand="home_title">مرحبًا بكم في منصة اجتماعات جمعية الإحسان</h2><p data-brand="home_text">بوابة موحدة لإدارة اجتماعات مجلس الإدارة واللجان، بدءًا من الدعوة وجدول الأعمال والملفات، مرورًا بالحضور والتصويت، وحتى اعتماد المحاضر والتوقيع ومتابعة القرارات.</p></div>
+          <div class="hero-actions"><button class="btn primary" data-view-jump="new-meeting">＋ إنشاء اجتماع جديد</button><button class="btn ghost" data-view-jump="dashboard">فتح لوحة المعلومات</button></div>
+        </div>
+        <div class="stats-grid">
+          <article><span>اجتماعاتي القادمة</span><strong id="homeMeetings">0</strong><small>اجتماعات مجدولة</small></article>
+          <article><span>تنبيهات جديدة</span><strong id="homeNotifications">0</strong><small>تحتاج الاطلاع</small></article>
+          <article><span>مهام مفتوحة</span><strong id="homeTasks">0</strong><small>تحتاج متابعة</small></article>
+          <article><span>محاضر معتمدة</span><strong id="homeMinutes">0</strong><small>تم توقيعها</small></article>
+        </div>
+        <div class="cards-grid">
+          <article><div class="member-head"><div class="member-avatar">＋</div><div><strong>إنشاء اجتماع</strong><div class="meta">دعوة الأعضاء وتحديد الموعد</div></div></div><p>أنشئ اجتماعًا جديدًا وأضف جدول الأعمال وروابط Zoom أو Teams أو Google Meet وارفع عدة ملفات.</p><button class="btn small primary" data-view-jump="new-meeting">ابدأ الآن</button></article>
+          <article><div class="member-head"><div class="member-avatar">◫</div><div><strong>الاجتماعات القادمة</strong><div class="meta">متابعة الحضور والملفات</div></div></div><p>استعرض الاجتماعات المجدولة واطلع على المرفقات وروابط الحضور وحالة كل اجتماع.</p><button class="btn small ghost" data-view-jump="meetings">عرض الاجتماعات</button></article>
+          <article><div class="member-head"><div class="member-avatar">✓</div><div><strong>التصويت</strong><div class="meta">النصاب والقرارات</div></div></div><p>انتقل إلى التصويت لتوثيق الأصوات وحساب النصاب وحفظ نتيجة القرار.</p><button class="btn small ghost" data-view-jump="votes">فتح التصويت</button></article>
+          <article><div class="member-head"><div class="member-avatar">▤</div><div><strong>المحاضر والتوقيع</strong><div class="meta">اعتماد إلكتروني</div></div></div><p>أنشئ المحضر وسجل فرص التحسين والتوصيات ثم اعتمده بالتوقيع الإلكتروني.</p><button class="btn small ghost" data-view-jump="minutes">فتح المحاضر</button></article>
+        </div>
+        <div class="dashboard-grid" style="margin-top:20px">
+          <div class="card"><div class="card-head"><h3>أقرب الاجتماعات</h3><button class="link-btn" data-view-jump="meetings">عرض الكل</button></div><div id="homeUpcomingList" class="list"></div></div>
+          <div class="card"><div class="card-head"><h3>تنبيهات مهمة</h3><button class="link-btn" data-view-jump="notifications">عرض الكل</button></div><div id="homeRecentNotifications" class="list"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-dashboard">
+        <div class="hero-panel"><div><span class="eyebrow">حوكمة رقمية للاجتماعات والقرارات</span><h2>إدارة متكاملة من الدعوة حتى اعتماد المحضر ومتابعة القرار</h2><p>لوحة واحدة لمجلس الإدارة واللجان تشمل الملفات، روابط Zoom وTeams وGoogle Meet، التصويت، التوقيع الإلكتروني، القرارات، الإشعارات والبريد.</p></div><div class="hero-actions"><button class="btn primary" data-view-jump="new-meeting">＋ إنشاء اجتماع</button><button class="btn ghost" data-view-jump="meetings">استعراض الاجتماعات</button></div></div>
+        <div class="stats-grid"><article><span>الاجتماعات القادمة</span><strong id="statMeetings">0</strong><small>مجدولة</small></article><article><span>الأعضاء</span><strong id="statMembers">0</strong><small>مسجلون</small></article><article><span>المهام المفتوحة</span><strong id="statTasks">0</strong><small>تحتاج متابعة</small></article><article><span>المحاضر الموقعة</span><strong id="statSigned">0</strong><small>معتمدة</small></article></div>
+        <div class="dashboard-grid"><div class="card"><div class="card-head"><h3>أقرب الاجتماعات</h3><button class="link-btn" data-view-jump="meetings">عرض الكل</button></div><div id="upcomingList" class="list"></div></div><div class="card"><div class="card-head"><h3>آخر الإشعارات</h3><button class="link-btn" data-view-jump="notifications">عرض الكل</button></div><div id="recentNotifications" class="list"></div></div></div>
+      </section>
+
+      <section class="view" id="view-meetings"><div class="section-head"><div><span class="eyebrow">سجل الاجتماعات</span><h2>اجتماعات مجلس الإدارة واللجان</h2></div><button class="btn primary" data-view-jump="new-meeting">＋ اجتماع جديد</button></div><div class="toolbar"><input id="meetingSearch" placeholder="بحث بعنوان الاجتماع أو اللجنة..." /><select id="meetingFilter"><option value="all">كل الحالات</option><option>مجدول</option><option>منعقد</option><option>مكتمل</option></select></div><div class="card attendance-card"><div class="card-head"><h3>الحضور والدعوات</h3></div><div class="toolbar"><select id="attendanceMeeting"></select><select id="attendanceStatus"><option>حاضر</option><option>عن بعد</option><option>معتذر</option></select><button class="btn small primary" type="button" id="markAttendance">تسجيل حضوري</button><button class="btn small ghost" type="button" id="sendInvitations">إرسال الدعوات لأعضاء اللجنة</button></div><div id="invitationsList" class="list"></div></div><div class="table-wrap"><table><thead><tr><th>الاجتماع</th><th>اللجنة</th><th>التاريخ</th><th>الوقت</th><th>النمط</th><th>الحالة</th><th>المرفقات</th><th>إجراء</th></tr></thead><tbody id="meetingsTable"></tbody></table></div></section>
+      <section class="view" id="view-new-meeting"><div class="section-head"><div><span class="eyebrow">إنشاء اجتماع</span><h2>بيانات الاجتماع وجدول الأعمال والمرفقات</h2></div></div><form id="meetingForm" class="form-card"><div class="form-grid cols-2"><label>عنوان الاجتماع<input name="title" required placeholder="مثال: الاجتماع السابع لمجلس الإدارة" /></label><label>الجهة / اللجنة<select name="committee" id="meetingCommittee" required></select></label><label>التاريخ الميلادي<input name="date" type="date" required /></label><label>التاريخ الهجري<input name="hijri" placeholder="مثال: 03 ربيع الأول 1448هـ" /></label><label>وقت البداية<input name="time" type="time" required /></label><label>وقت النهاية<input name="endTime" type="time" /></label><label>نوع الحضور<select name="mode"><option>حضوري</option><option>عن بُعد</option><option>حضوري + عن بُعد</option></select></label><label>الموقع<input name="location" placeholder="قاعة مجلس الإدارة" /></label><label>منصة الاجتماع<select name="platform"><option>بدون رابط</option><option>Zoom</option><option>Microsoft Teams</option><option>Google Meet</option></select></label><label>رابط الاجتماع<input name="meetingUrl" type="url" placeholder="https://..." /></label></div><label>وصف / ملاحظات<textarea name="description" rows="3" placeholder="تعليمات الحضور أو وصف موجز"></textarea></label><div class="subsection"><div class="card-head"><h3>جدول الأعمال</h3><button class="btn small ghost" type="button" id="addAgenda">＋ إضافة محور</button></div><div id="agendaRows" class="agenda-editor"></div></div><div class="subsection"><h3>ملفات الاجتماع</h3><label class="upload-zone">📎 <strong>ارفع عدة ملفات</strong><span>PDF، Word، Excel، صور وغيرها</span><input id="meetingFiles" type="file" multiple /></label><div id="filePreview" class="chips"></div></div><label class="dm-followup"><input type="checkbox" id="meetingFollowup" checked /> إضافة بند «متابعة تنفيذ قرارات الاجتماعات السابقة» إلى جدول الأعمال، وعرض آخر حالة لقرارات الجهة قبل الاجتماع</label><div class="subsection form-grid" id="meetingReminderBox"></div><div class="form-actions"><button class="btn primary" type="submit">حفظ وجدولة الاجتماع</button><button class="btn ghost" type="reset">مسح الحقول</button></div></form></section>
+      <section class="view" id="view-members"><div class="section-head"><div><span class="eyebrow">إدارة الأعضاء</span><h2>بيانات أعضاء المجلس واللجان</h2></div><span class="meta">ينضم الأعضاء بإنشاء حساب من شاشة الدخول</span></div><div class="cards-grid" id="membersGrid"></div></section>
+      <section class="view" id="view-committees"><div class="section-head"><div><span class="eyebrow">اللجان</span><h2>إدارة اللجان المنبثقة من المجلس</h2></div><button class="btn primary" id="addCommitteeBtn">＋ لجنة جديدة</button></div><div class="cards-grid" id="committeesGrid"></div></section>
+      <section class="view" id="view-votes"><div class="section-head"><div><span class="eyebrow">التصويت والنصاب</span><h2>إنشاء تصويت وتوثيق النتائج</h2></div></div><div class="split-grid"><form id="voteForm" class="form-card compact"><label>الاجتماع<select id="voteMeeting" required></select></label><label>موضوع التصويت<input id="voteTitle" required /></label><label>نوع التصويت<select id="voteType"><option>معلن</option><option>سري</option></select></label><label>الحد الأدنى للنصاب (عدد الأصوات)<input id="voteQuorum" type="number" min="1" value="1" /></label><button class="btn primary" type="submit">فتح التصويت للأعضاء</button></form><div class="card"><h3>سجل التصويتات</h3><div id="votesList" class="list"></div></div></div></section>
+      <section class="view" id="view-minutes"><div class="section-head"><div><span class="eyebrow">المحاضر والتوقيع</span><h2>إعداد المحضر وتوثيق التوقيع الإلكتروني</h2></div></div><div class="split-grid"><form id="minutesForm" class="form-card compact"><label>الاجتماع<select id="minutesMeeting" required></select></label><label>نص المحضر<textarea id="minutesText" rows="8" placeholder="أبرز المناقشات والقرارات..."></textarea></label><label>فرص التحسين / التوصيات<textarea id="minutesImprovement" rows="4"></textarea></label><div class="signature-box"><strong>توقيع معد المحضر (اختياري)</strong><canvas id="signatureCanvas" width="620" height="180"></canvas><div class="signature-tools"><button type="button" class="btn small ghost" id="clearSignature">مسح التوقيع</button><label class="btn small ghost file-label">رفع توقيع PNG<input type="file" id="signatureUpload" accept="image/png,image/jpeg" /></label></div></div><button class="btn primary" type="submit">حفظ المحضر</button></form><div class="card"><h3>المحاضر المحفوظة</h3><div id="minutesList" class="list"></div></div></div></section>
+      <section class="view" id="view-tasks">
+        <div class="section-head"><div><span class="eyebrow">الحوكمة والتوثيق</span><h2>المهام والتكليفات</h2></div><button class="btn primary" id="dfAdd" type="button">＋ مهمة جديدة</button></div>
+        <div class="df-kpis" id="dfKpis" aria-live="polite"></div>
+        <div class="df-tabs" role="tablist" aria-label="أقسام المتابعة">
+          <button type="button" role="tab" id="dfTabTasks" data-tab="tasks" aria-selected="true" aria-controls="dfTasksPane">المهام والتنفيذ</button>
+          <button type="button" role="tab" id="dfTabReg" data-tab="register" aria-selected="false" aria-controls="dfRegisterPane">سجل القرارات</button>
+        </div>
+        <div id="dfTasksPane" role="tabpanel" aria-labelledby="dfTabTasks">
+          <div class="df-filters">
+            <input id="dfSearch" type="search" placeholder="ابحث في المهام..." aria-label="بحث في المهام" />
+            <select id="dfAssignee" aria-label="المسؤول"><option value="">كل المسؤولين</option><option value="me">مهامي فقط</option></select>
+            <select id="dfMeeting" aria-label="الاجتماع"><option value="">كل الاجتماعات</option></select>
+            <select id="dfPriority" aria-label="الأولوية"><option value="">كل الأولويات</option><option>عالية</option><option>متوسطة</option><option>منخفضة</option></select>
+            <label class="df-check"><input id="dfOverdue" type="checkbox" /> المتأخرة فقط</label>
+            <div class="df-view" role="group" aria-label="طريقة العرض"><button type="button" class="btn small ghost" data-dfview="board" aria-pressed="true">لوحة</button><button type="button" class="btn small ghost" data-dfview="list" aria-pressed="false">قائمة</button></div>
+          </div>
+          <div id="dfBoard" class="df-board"></div>
+          <div id="dfList" class="table-wrap" hidden></div>
+        </div>
+        <div id="dfRegisterPane" role="tabpanel" aria-labelledby="dfTabReg" hidden>
+          <p class="meta">كل قرار صدر بتصويت مغلق أو بالتمرير مع تقدّم تنفيذه. تُربط مهام التصويت بنفس الاجتماع.</p>
+          <div id="dfRegister" class="list"></div>
+        </div>
+      </section>
+      <section class="view" id="view-notifications"><div class="section-head"><div><span class="eyebrow">الإشعارات</span><h2>تذكيرات الحضور والتصويت والتوقيع</h2></div><button class="btn primary" id="addNotifBtn">＋ إشعار</button></div><div class="notice-settings card"><label><input type="checkbox" checked disabled /> إشعارات داخل المنصة</label><label><input type="checkbox" id="emailChannel" /> البريد الإلكتروني <small>تجريبي في هذه النسخة</small></label><label><input type="checkbox" id="whatsappChannel" /> واتساب <small>يتطلب مزود API خارجي</small></label></div><div id="notificationsList" class="list card"></div></section>
+      <section class="view" id="view-mail"><div class="section-head"><div><span class="eyebrow">البريد الداخلي</span><h2>الوارد والصادر لكل عضو</h2></div><button class="btn primary" id="composeBtn">✉ رسالة جديدة</button></div><div class="mail-layout"><div class="mail-folders"><button class="active" data-mailbox="inbox">الوارد <span id="inboxCount">0</span></button><button data-mailbox="sent">الصادر <span id="sentCount">0</span></button></div><div id="mailList" class="mail-list"></div></div></section>
+      <section class="view" id="view-about">
+        <div class="section-head"><div><span class="eyebrow" data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</span><h2>عن المنصة</h2></div></div>
+        <div class="split-grid">
+          <article class="card"><h3>من نحن</h3><p id="aboutText" class="pre-wrap" data-brand="about"></p></article>
+          <article class="card"><h3>الرؤية</h3><p id="visionText" class="pre-wrap" data-brand="vision"></p><h3>الرسالة</h3><p id="missionText" class="pre-wrap" data-brand="mission"></p></article>
+        </div>
+        <article class="card" style="margin-top:16px"><h3>أهداف المنصة</h3><ul id="goalsList"></ul></article>
+        <article class="card" style="margin-top:16px"><h3>بيانات الجهة</h3><img id="aboutLogo2" class="logo" alt="الشعار الثاني" hidden /><div id="orgInfoList" class="list"></div></article>
+        <article class="card" style="margin-top:16px"><h3>التواصل</h3><div id="contactList" class="list"></div></article>
+      </section>
+
+      <section class="view" id="view-branding">
+        <div class="section-head"><div><span class="eyebrow">للمدير فقط</span><h2>بيانات المنصة</h2></div></div>
+        <form id="brandingForm" class="form-card" autocomplete="off">
+          <p id="brandingNote" class="meta"></p>
+          <div class="form-grid cols-2">
+            <label>اسم المنصة<input name="platform_name" maxlength="80" /></label>
+            <label>اسم الجهة<input name="org_name" maxlength="120" /></label>
+            <label>العبارة الترحيبية (الصفحة الرئيسية)<input name="home_title" maxlength="160" /></label>
+            <label>العنوان الفرعي (الصفحة الرئيسية)<input name="home_eyebrow" maxlength="120" /></label>
+          </div>
+          <label>نص الصفحة الرئيسية<textarea name="home_text" rows="3" maxlength="600"></textarea></label>
+          <div class="subsection">
+            <label>الشعار (رابط https أو ارفع صورة PNG/JPG/WebP حتى 2 م.ب)
+              <input name="logo_url" maxlength="500" placeholder="https://..." /></label>
+            <div class="form-actions"><label class="btn ghost file-label">رفع شعار<input type="file" id="logoFile" class="img-upload" data-target="logo_url" accept="image/png,image/jpeg,image/webp" /></label><img id="logoPreview" class="logo" alt="معاينة الشعار" /></div>
+          </div>
+          <div class="subsection form-grid">
+            <label>الشعار الثاني (للطباعة وصفحة "عن المنصة") — رابط https أو رفع صورة<input name="logo2_url" maxlength="500" placeholder="https://..." /></label>
+            <div class="form-actions"><label class="btn ghost file-label">رفع الشعار الثاني<input type="file" class="img-upload" data-target="logo2_url" accept="image/png,image/jpeg,image/webp" /></label><img id="logo2Preview" class="logo" alt="معاينة الشعار الثاني" hidden /></div>
+            <label>أيقونة التبويب (favicon) — صورة مربعة PNG/WebP يُفضَّل 64×64<input name="favicon_url" maxlength="500" placeholder="https://..." /></label>
+            <div class="form-actions"><label class="btn ghost file-label">رفع الأيقونة<input type="file" class="img-upload" data-target="favicon_url" accept="image/png,image/jpeg,image/webp" /></label></div>
+          </div>
+          <div class="form-grid cols-2">
+            <label>اللون الأساسي<input name="primary_color" type="color" /></label>
+            <label>اللون الثانوي<input name="accent_color" type="color" /></label>
+          </div>
+          <div class="subsection form-grid">
+            <label>من نحن<textarea name="about" rows="4" maxlength="2000"></textarea></label>
+            <div class="form-grid cols-2">
+              <label>الرؤية<textarea name="vision" rows="3" maxlength="800"></textarea></label>
+              <label>الرسالة<textarea name="mission" rows="3" maxlength="800"></textarea></label>
+            </div>
+            <label>الأهداف (هدف في كل سطر)<textarea name="goals" rows="5" maxlength="2000"></textarea></label>
+          </div>
+          <div class="subsection form-grid cols-2">
+            <label>البريد الإلكتروني<input name="contact_email" type="email" maxlength="120" /></label>
+            <label>الجوال<input name="contact_phone" maxlength="40" /></label>
+            <label>العنوان<input name="contact_address" maxlength="200" /></label>
+            <label>واتساب (أرقام فقط مع رمز الدولة)<input name="contact_whatsapp" type="tel" inputmode="tel" maxlength="20" placeholder="9665XXXXXXXX" dir="ltr" /></label>
+            <label>ساعات العمل<input name="contact_hours" maxlength="120" placeholder="الأحد – الخميس، 8 ص – 4 م" /></label>
+            <label>الموقع الإلكتروني (https)<input name="contact_website" maxlength="200" /></label>
+          </div>
+          <div class="subsection form-grid cols-2">
+            <label>رقم الترخيص / السجل<input name="license_no" maxlength="60" /></label>
+            <span></span>
+            <label>اسم رئيس المجلس<input name="chair_name" maxlength="100" /></label>
+            <label>صفة رئيس المجلس<input name="chair_title" maxlength="100" placeholder="رئيس مجلس الإدارة" /></label>
+            <label>اسم أمين السر<input name="secretary_name" maxlength="100" /></label>
+            <label>صفة أمين السر<input name="secretary_title" maxlength="100" placeholder="أمين السر" /></label>
+          </div>
+          <div class="subsection form-grid cols-2">
+            <label>X (تويتر) — https<input name="social_x" maxlength="200" /></label>
+            <label>LinkedIn — https<input name="social_linkedin" maxlength="200" /></label>
+            <label>Instagram — https<input name="social_instagram" maxlength="200" /></label>
+            <label>YouTube — https<input name="social_youtube" maxlength="200" /></label>
+          </div>
+          <label>نص أسفل القائمة الجانبية<input name="footer_text" maxlength="160" /></label>
+          <div class="form-actions"><button class="btn primary" type="submit">حفظ البيانات</button><button class="btn ghost" type="button" id="brandingReset">استعادة الافتراضي</button></div>
+        </form>
+      </section>
+      <section class="view" id="view-volunteer">
+        <div class="section-head"><div><span class="eyebrow">مساحتي</span><h2>الساعات التطوعية</h2></div></div>
+        <div class="stats-grid">
+          <article><span>ساعات معتمدة</span><strong id="volApproved">0</strong><small>ساعة</small></article>
+          <article><span>قيد المراجعة</span><strong id="volPending">0</strong><small>ساعة</small></article>
+          <article><span>عدد التسجيلات</span><strong id="volCount">0</strong><small>تسجيل</small></article>
+          <article><span>آخر نشاط</span><strong id="volLast" class="stat-text">—</strong><small>&nbsp;</small></article>
+        </div>
+        <div class="split-grid">
+          <form id="volForm" class="form-card" autocomplete="off">
+            <h3>تسجيل ساعات جديدة</h3>
+            <div class="form-grid">
+              <div class="form-grid cols-2">
+                <label>التاريخ<input name="work_date" type="date" required /></label>
+                <label>عدد الساعات<input name="hours" type="number" min="0.5" max="24" step="0.5" required /></label>
+              </div>
+              <label>الاجتماع (اختياري)<select name="meeting_id" class="meeting-select"><option value="">بدون اجتماع محدد</option></select></label>
+              <label>وصف النشاط<textarea name="activity" rows="3" maxlength="300" required></textarea></label>
+            </div>
+            <div class="form-actions"><button class="btn primary" type="submit">إرسال للمراجعة</button></div>
+          </form>
+          <div class="card"><div class="card-head"><h3 id="volListTitle">سجلي</h3><button class="link-btn" id="volReviewToggle" type="button" hidden>عرض طلبات المراجعة</button></div><div id="volList" class="list"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-notify-prefs">
+        <div class="section-head"><div><span class="eyebrow">مساحة العضو</span><h2>تفضيلات التنبيه</h2></div></div>
+        <form id="prefsForm" class="form-card compact" autocomplete="off">
+          <p class="meta">المنظّم هو من يحدد تكرار التذكير لكل اجتماع (يوميًا، كل يومين، كل 3 أيام، أسبوعيًا، أو قبل الموعد بساعات). من هنا تختار القنوات التي تقبل استلام التنبيهات عبرها.</p>
+          <fieldset class="check-grid"><legend>قنوات الاستلام</legend>
+            <label><input type="checkbox" name="pref_whatsapp" /> واتساب</label>
+            <label><input type="checkbox" name="pref_sms" /> رسالة نصية</label>
+            <label><input type="checkbox" name="pref_email" /> البريد الإلكتروني</label>
+          </fieldset>
+          <label style="margin-top:14px">رقم الجوال (للواتساب والرسائل النصية)<input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="05XXXXXXXX" dir="ltr" /></label>
+          <div class="form-actions"><button class="btn primary" type="submit">حفظ التفضيلات</button></div>
+        </form>
+      </section>
+
+      <section class="view" id="view-scheduler">
+        <div class="section-head"><div><span class="eyebrow">إدارة الاجتماعات</span><h2>جدولة الاجتماعات</h2></div><button class="btn primary" id="schedNewBtn" type="button">＋ جدولة اجتماع</button></div>
+        <div class="sched-bar">
+          <div class="sched-nav"><button class="btn small ghost" id="schedPrev" type="button">الشهر السابق</button><strong id="schedTitle" aria-live="polite"></strong><button class="btn small ghost" id="schedNext" type="button">الشهر التالي</button><button class="btn small ghost" id="schedToday" type="button">اليوم</button></div>
+          <select id="schedCommittee" aria-label="تصفية حسب اللجنة"><option value="">كل اللجان</option></select>
+        </div>
+        <div class="sched-cal" id="schedCal"></div>
+        <div class="card" style="margin-top:16px"><h3>اجتماعات الشهر</h3><div id="schedList" class="list"></div></div>
+      </section>
+
+      <dialog id="schedDialog"><form id="schedForm" class="modal-card" autocomplete="off">
+        <div class="modal-head"><h3>جدولة اجتماع</h3><button class="icon-btn" type="button" id="schedClose" aria-label="إغلاق">✕</button></div>
+        <div class="form-grid sched-fields">
+          <label>عنوان الاجتماع<input name="title" required maxlength="150" /></label>
+          <div class="form-grid cols-2">
+            <label>اللجنة<select name="committee" id="schedFormCommittee" required></select></label>
+            <label>نمط الحضور<select name="mode"><option>حضوري</option><option>عن بُعد</option><option>حضوري + عن بُعد</option></select></label>
+            <label>التاريخ<input name="date" type="date" required /></label>
+            <label>المكان<input name="location" maxlength="120" placeholder="قاعة مجلس الإدارة" /></label>
+            <label>وقت البداية<input name="time" type="time" required /></label>
+            <label>وقت النهاية<input name="endTime" type="time" /></label>
+            <label>المنصة<select name="platform"><option>بدون رابط</option><option>Zoom</option><option>Microsoft Teams</option><option>Google Meet</option></select></label>
+            <label>رابط الاجتماع (https)<input name="meetingUrl" type="url" placeholder="https://..." /></label>
+          </div>
+          <fieldset class="check-grid sched-repeat"><legend>التكرار</legend>
+            <label>النمط<select name="repeat"><option value="">اجتماع واحد</option><option value="weekly">أسبوعيًا</option><option value="biweekly">كل أسبوعين</option><option value="monthly">شهريًا (نفس اليوم من الشهر)</option></select></label>
+            <label>عدد الاجتماعات<input name="count" type="number" min="2" max="12" value="4" /></label>
+          </fieldset>
+          <label>حجز قاعة (اختياري)<select name="hall_id" id="schedHall"><option value="">بدون حجز قاعة</option></select></label>
+          <div id="schedRemBox" class="form-grid subsection"></div>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit">جدولة</button><button class="btn ghost" type="button" id="schedCancel">إلغاء</button></div>
+      </form></dialog>
+
+      <dialog id="schedDetail"><div class="modal-card">
+        <div class="modal-head"><h3 id="schedDetailTitle">تفاصيل الاجتماع</h3><button class="icon-btn" type="button" id="schedDetailClose" aria-label="إغلاق">✕</button></div>
+        <div id="schedDetailBody" class="form-grid"></div>
+      </div></dialog>
+
+      <section class="view" id="view-cycle">
+        <div class="section-head"><div><span class="eyebrow">اجتماعات</span><h2>مركز دورة الاجتماعات</h2></div>
+          <select id="cycleFilter" aria-label="تصفية الاجتماعات"><option value="active">الاجتماعات الجارية</option><option value="all">كل الاجتماعات</option></select></div>
+        <p class="meta">تتبّع كل اجتماع عبر مراحله: التحضير، الدعوات، الانعقاد، التصويت، المحضر، الاعتماد، متابعة المهام. المرحلة تُحسب من بيانات المنصة تلقائيًا.</p>
+        <div id="cycleStats" class="stats-grid"></div>
+        <div id="cycleList" class="list"></div>
+      </section>
+
+      <section class="view" id="view-hospitality">
+        <div class="section-head"><div><span class="eyebrow">أثناء الاجتماع</span><h2>طلب ضيافة</h2></div></div>
+        <div class="split-grid">
+          <form id="hospForm" class="form-card" autocomplete="off">
+            <h3>طلب جديد</h3>
+            <div class="form-grid">
+              <label>الاجتماع<select name="meeting_id" class="meeting-select" required><option value="">اختر الاجتماع</option></select></label>
+              <fieldset class="check-grid"><legend>الأصناف</legend>
+                <label><input type="checkbox" name="items" value="قهوة عربية" /> قهوة عربية</label>
+                <label><input type="checkbox" name="items" value="شاي" /> شاي</label>
+                <label><input type="checkbox" name="items" value="ماء" /> ماء</label>
+                <label><input type="checkbox" name="items" value="عصير" /> عصير</label>
+                <label><input type="checkbox" name="items" value="تمر" /> تمر</label>
+                <label><input type="checkbox" name="items" value="وجبة خفيفة" /> وجبة خفيفة</label>
+                <label><input type="checkbox" name="items" value="غداء" /> غداء</label>
+              </fieldset>
+              <div class="form-grid cols-2">
+                <label>عدد الأشخاص<input name="people" type="number" min="1" max="500" value="10" required /></label>
+                <label>الأولوية<select name="priority"><option>عادي</option><option>عاجل</option></select></label>
+              </div>
+              <label>مكان التقديم (القاعة)<input name="location" maxlength="120" /></label>
+              <label>ملاحظات<textarea name="notes" rows="2" maxlength="300"></textarea></label>
+            </div>
+            <div class="form-actions"><button class="btn primary" type="submit">إرسال الطلب</button></div>
+          </form>
+          <div class="card"><div class="card-head"><h3 id="hospListTitle">طلباتي</h3><button class="link-btn" id="hospAllToggle" type="button" hidden>عرض كل الطلبات</button></div><div id="hospList" class="list"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-crisis">
+        <div class="section-head"><div><span class="eyebrow">أثناء الاجتماع</span><h2>الأزمات والطوارئ</h2></div><button class="btn ghost" id="emergencyMeetingBtn" type="button">＋ الدعوة لاجتماع طارئ</button></div>
+        <div class="split-grid">
+          <form id="crisisForm" class="form-card" autocomplete="off">
+            <h3>الإبلاغ عن بلاغ</h3>
+            <div class="form-grid">
+              <div class="form-grid cols-2">
+                <label>النوع<select name="kind" required><option>مشكلة تقنية</option><option>انقطاع الاتصال</option><option>طارئ صحي</option><option>إخلاء</option><option>خلل أمني</option><option>تسريب معلومات</option><option>أخرى</option></select></label>
+                <label>الخطورة<select name="severity" required><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option><option>حرجة</option></select></label>
+              </div>
+              <label>الاجتماع (اختياري)<select name="meeting_id" class="meeting-select"><option value="">غير مرتبط باجتماع</option></select></label>
+              <label>وصف البلاغ<textarea name="description" rows="4" maxlength="1000" required></textarea></label>
+            </div>
+            <div class="form-actions"><button class="btn primary" type="submit">إرسال البلاغ</button></div>
+          </form>
+          <div>
+            <div class="card"><h3>إجراءات الطوارئ</h3>
+              <ol class="steps">
+                <li>في الخطر المباشر على الأرواح اتصل بالجهات المختصة أولًا (الدفاع المدني 998 / الإسعاف 997 / الأمن 999 / الطوارئ الموحد 911).</li>
+                <li>أبلغ رئيس الاجتماع أو أمين السر فورًا وأوقف النقاش عند الحاجة.</li>
+                <li>سجّل البلاغ هنا ليصل إشعار للمدير ويُوثَّق.</li>
+                <li>عند تعذر الاجتماع، ادعُ لاجتماع طارئ أو استخدم القرار بالتمرير.</li>
+                <li>بعد المعالجة يُغلق البلاغ بملاحظة توضح ما تم.</li>
+              </ol>
+            </div>
+            <div class="card" style="margin-top:14px"><div class="card-head"><h3 id="crisisListTitle">بلاغاتي</h3><button class="link-btn" id="crisisAllToggle" type="button" hidden>عرض كل البلاغات</button></div><div id="crisisList" class="list"></div></div>
+          </div>
+        </div>
+      </section>
+      <section class="view" id="view-elections">
+        <div class="section-head"><div><span class="eyebrow">الحوكمة والتوثيق</span><h2>الترشيحات والانتخابات</h2></div></div>
+        <form id="electionForm" class="form-card compact" autocomplete="off" hidden>
+          <h3>انتخاب جديد</h3>
+          <div class="form-grid">
+            <label>العنوان<input name="title" maxlength="150" required /></label>
+            <div class="form-grid cols-2">
+              <label>اللجنة (الناخبون والمرشحون من أعضائها)<select name="committee_id" id="electionCommittee"><option value="">كل الأعضاء</option></select></label>
+              <label>عدد المقاعد<input name="seats" type="number" min="1" max="20" value="1" required /></label>
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn primary" type="submit">إنشاء وفتح باب الترشيح</button></div>
+        </form>
+        <p class="meta">مراحل الانتخاب: ترشيح ← تصويت سري ← إعلان النتيجة. لا تظهر النتائج لأحد قبل الإغلاق، ولا يُحفظ من اختار من.</p>
+        <div id="electionList" class="list"></div>
+      </section>
+
+      <section class="view" id="view-signatures">
+        <div class="section-head"><div><span class="eyebrow">الحوكمة والتوثيق</span><h2>التوقيعات</h2></div></div>
+        <div class="stats-grid">
+          <article><span>بانتظار توقيعي</span><strong id="sigPending">0</strong><small>محضر</small></article>
+          <article><span>وقّعتُها</span><strong id="sigDone">0</strong><small>محضر</small></article>
+        </div>
+        <div class="split-grid">
+          <div class="card"><h3>محاضر بانتظار توقيعي</h3><div id="sigPendingList" class="list"></div></div>
+          <div class="card"><h3>توقيعاتي السابقة</h3><div id="sigDoneList" class="list"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-regulations">
+        <div class="section-head"><div><span class="eyebrow">الحوكمة والتوثيق</span><h2>مرجع الأنظمة</h2></div><button class="btn primary" id="regAddBtn" type="button" hidden>＋ إضافة نظام</button></div>
+        <form id="regForm" class="form-card" autocomplete="off" hidden>
+          <input type="hidden" name="id" />
+          <div class="form-grid cols-2">
+            <label>العنوان<input name="title" maxlength="200" required /></label>
+            <label>التصنيف<input name="category" maxlength="60" placeholder="لائحة، سياسة، دليل..." /></label>
+            <label>الإصدار<input name="version" maxlength="30" /></label>
+            <label>تاريخ السريان<input name="effective_date" type="date" /></label>
+            <label>الحالة<select name="status"><option>ساري</option><option>قيد المراجعة</option><option>ملغى</option></select></label>
+            <label>رابط الوثيقة (https)<input name="url" maxlength="500" placeholder="https://..." /></label>
+          </div>
+          <label>ملخص<textarea name="summary" rows="3" maxlength="1000"></textarea></label>
+          <div class="form-actions"><button class="btn primary" type="submit">حفظ</button><button class="btn ghost" type="button" id="regCancel">إلغاء</button></div>
+        </form>
+        <div class="toolbar"><input id="regSearch" placeholder="ابحث في الأنظمة..." /><select id="regCategory"><option value="">كل التصنيفات</option></select></div>
+        <div id="regList" class="list"></div>
+      </section>
+
+      <section class="view" id="view-ideas">
+        <div class="section-head"><div><span class="eyebrow">الذكاء والتطوير</span><h2>الأفكار والأثر</h2></div></div>
+        <div class="split-grid">
+          <form id="ideaForm" class="form-card" autocomplete="off">
+            <h3>اقتراح فكرة تطويرية</h3>
+            <div class="form-grid">
+              <label>عنوان الفكرة<input name="title" maxlength="150" required /></label>
+              <label>التصنيف<input name="category" maxlength="60" placeholder="حوكمة، تقنية، برامج..." /></label>
+              <label>الوصف<textarea name="description" rows="4" maxlength="1000"></textarea></label>
+            </div>
+            <div class="form-actions"><button class="btn primary" type="submit">إرسال الفكرة</button></div>
+          </form>
+          <div class="card">
+            <div class="card-head"><h3>الأفكار</h3><select id="ideaFilter" aria-label="تصفية الأفكار"><option value="">كل الحالات</option><option>مقترحة</option><option>قيد الدراسة</option><option>معتمدة</option><option>منفذة</option><option>مرفوضة</option></select></div>
+            <div id="ideaList" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-halls">
+        <div class="section-head"><div><span class="eyebrow">الذكاء والتطوير</span><h2>القاعات والامتثال</h2></div><button class="btn primary" id="addHallBtn" type="button" hidden>＋ إضافة قاعة</button></div>
+        <div class="split-grid">
+          <div class="card"><h3>القاعات</h3><div id="hallList" class="list"></div></div>
+          <form id="bookForm" class="form-card" autocomplete="off">
+            <h3>حجز قاعة لاجتماع</h3>
+            <div class="form-grid">
+              <label>القاعة<select name="hall_id" id="bookHall" required><option value="">اختر القاعة</option></select></label>
+              <label>الاجتماع<select name="meeting_id" class="meeting-select" required><option value="">اختر الاجتماع</option></select></label>
+              <div class="form-grid cols-2">
+                <label>من<input name="start_at" type="datetime-local" required /></label>
+                <label>إلى<input name="end_at" type="datetime-local" required /></label>
+              </div>
+            </div>
+            <div class="form-actions"><button class="btn primary" type="submit">تأكيد الحجز</button></div>
+          </form>
+        </div>
+        <div class="card" style="margin-top:16px"><h3>الحجوزات القادمة</h3><div id="bookList" class="list"></div></div>
+        <div class="card" style="margin-top:16px"><h3>الامتثال الإجرائي للاجتماعات</h3><p class="meta">فحوص تلقائية: جدول الأعمال، الدعوة قبل 3 أيام على الأقل، اكتمال نصاب التصويتات، إعداد المحضر خلال 7 أيام، اعتماد المحضر.</p><div class="table-wrap"><table><thead><tr><th>الاجتماع</th><th>التاريخ</th><th>جدول الأعمال</th><th>الدعوة المبكرة</th><th>النصاب</th><th>المحضر في موعده</th><th>الاعتماد</th><th>الامتثال</th></tr></thead><tbody id="complianceTable"></tbody></table></div></div>
+      </section>
+
+      <section class="view" id="view-maturity">
+        <div class="section-head"><div><span class="eyebrow">الذكاء والتطوير</span><h2>المؤسسي المتقدم — مؤشر النضج</h2></div></div>
+        <div class="stats-grid">
+          <article><span>مؤشر النضج المؤسسي</span><strong id="maturityScore">—</strong><small id="maturityLevel">&nbsp;</small></article>
+        </div>
+        <div class="split-grid">
+          <div class="card"><h3>المحاور</h3><div id="maturityBars" class="list"></div></div>
+          <div class="card"><h3>توصيات التطوير</h3><ul id="maturityTips" class="steps"></ul></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-reports">
+        <div class="section-head"><div><span class="eyebrow">الأرشفة والقياس</span><h2>التقارير والقياس</h2></div><div class="form-actions" style="margin:0"><button class="btn ghost" id="exportMeetings" type="button">تصدير الاجتماعات CSV</button><button class="btn ghost" id="exportTasks" type="button">تصدير المهام CSV</button></div></div>
+        <div id="reportKpis" class="stats-grid"></div>
+        <div class="split-grid">
+          <div class="card"><h3>الاجتماعات في آخر 12 شهرًا</h3><div id="reportMonths" class="bars"></div></div>
+          <div class="card"><h3>حسب اللجنة</h3><div class="table-wrap"><table><thead><tr><th>اللجنة</th><th>الاجتماعات</th><th>محاضر معتمدة</th><th>مهام مفتوحة</th></tr></thead><tbody id="reportCommittees"></tbody></table></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-archive">
+        <div class="section-head"><div><span class="eyebrow">الأرشفة والقياس</span><h2>الأرشفة والذاكرة المؤسسية</h2></div></div>
+        <div class="toolbar"><input id="arcSearch" placeholder="ابحث في المحاضر والقرارات..." /><select id="arcYear"><option value="">كل السنوات</option></select><select id="arcCommittee"><option value="">كل اللجان</option></select></div>
+        <div class="split-grid">
+          <div class="card"><h3>المحاضر المعتمدة</h3><div id="arcMinutes" class="list"></div></div>
+          <div class="card"><h3>القرارات والتصويتات المغلقة</h3><div id="arcVotes" class="list"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <dialog id="genericModal"><form method="dialog" class="modal-card" id="modalForm"><div class="modal-head"><h3 id="modalTitle">إضافة</h3><button value="cancel" class="icon-btn">✕</button></div><div id="modalFields"></div><div class="form-actions"><button type="button" class="btn primary" id="modalSave">حفظ</button><button value="cancel" class="btn ghost">إلغاء</button></div></form></dialog>
+  <div class="toast" id="toast"></div>
+  <script src="script.js?v=8e189a7f"></script>
+  <script src="home.js?v=8e189a7f"></script>
+</body>
+</html>
