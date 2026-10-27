@@ -159,10 +159,11 @@
     const rows = meetingsCache.filter(m => (status === 'all' || m.status === status) && `${m.title} ${m.committees?.name || ''}`.toLowerCase().includes(term));
     setHtml('#meetingsTable', rows.map(m => {
       const url = safeUrl(m.meeting_url);
-      return `<tr><td>${esc(m.title)}</td><td>${esc(m.committees?.name || '')}</td><td>${esc(m.gregorian_date)}</td><td>${esc(m.start_time?.slice(0, 5) || '')}</td><td>${esc(m.mode)}</td><td><span class="status-pill">${esc(m.status)}</span></td><td>${m.attachments?.[0]?.count || 0}</td><td>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">فتح الرابط</a>` : '—'}</td></tr>`;
+      return `<tr><td>${esc(m.title)}</td><td>${esc(m.committees?.name || '')}</td><td>${esc(m.gregorian_date)}</td><td>${esc(m.start_time?.slice(0, 5) || '')}</td><td>${esc(m.mode)}</td><td><span class="status-pill">${esc(m.status)}</span></td><td>${m.attachments?.[0]?.count || 0}</td><td>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">فتح الرابط</a> ` : ''}<button type="button" class="btn small ghost" data-manage-meeting="${esc(m.id)}">إدارة</button></td></tr>`;
     }).join('') || '<tr><td colspan="8">لا توجد اجتماعات مطابقة.</td></tr>');
   }
 
+  window.ehsanMeetings = {reload: () => loadMeetings()}; // يستخدمها meeting-manage.js بعد التعديل والحذف
   async function loadMeetings() {
     const {data, error} = await db.from('meetings').select('*,committees(name),attachments(count)').order('gregorian_date', {ascending: true});
     if (error) return loadFailed('الاجتماعات', error);
@@ -209,13 +210,13 @@
     }).filter(Boolean);
     if (agenda.length) {
       const {error: agErr} = await db.from('agenda_items').insert(agenda);
-      if (agErr) failures.push('جدول الأعمال');
+      if (agErr) failures.push('جدول الأعمال (' + agErr.message + ')');
     }
     for (const file of [...(q('#meetingFiles')?.files || [])]) {
       const path = `${data.id}/${safeFileKey(file.name)}`;
       const up = await db.storage.from('meeting-files').upload(path, file);
       const rec = up.error ? up : await db.from('attachments').insert({meeting_id: data.id, file_name: file.name, storage_path: path, mime_type: file.type, size_bytes: file.size, uploaded_by: s.user.id});
-      if (rec.error) failures.push(file.name);
+      if (rec.error) failures.push(file.name + ' (' + rec.error.message + ')');
     }
     if (reminder) {
       const remErr = await window.ehsanReminders.save(data.id, reminder);

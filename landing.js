@@ -169,6 +169,8 @@ html[data-auth=out] body{background:#f9f4ee}
 .lp-sheet b.m{width:62%}.lp-sheet b.k{width:44%}
 .lp-hero.lp-still .lp-stack-in{animation-play-state:paused}
 .lp-3d .lp-stack.lp-logo3d{width:min(330px,28%);aspect-ratio:1;top:52%}
+.lp-3d .lp-logo3d .lp-stack-in{animation:lp-logo-spin 8s ease-in-out infinite alternate}
+@keyframes lp-logo-spin{from{transform:translate3d(0,-10px,0) rotateY(-38deg) rotateX(4deg)}50%{transform:translate3d(0,6px,0) rotateY(0deg) rotateX(-3deg)}to{transform:translate3d(0,-10px,0) rotateY(38deg) rotateX(4deg)}}
 .lp-logo-l{position:absolute;inset:0;overflow:hidden;border-radius:6px}
 .lp-logo-l img{position:absolute;width:320%;height:auto;max-width:none;object-fit:fill;left:-112%;top:-8%;right:auto;bottom:auto;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
 .lp-logo-l.l0{transform:translateZ(0);opacity:.28}
