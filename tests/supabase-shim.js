@@ -77,6 +77,7 @@ window.makeShim = function (pg, getUid) {
     },
     storage: {from: bucket => ({
       upload: async (path, file) => { files.set(bucket + '/' + path, file); return {data: {path}, error: null}; },
+      remove: async paths => { paths.forEach(p => files.delete(bucket + '/' + p)); return {data: paths, error: null}; },
       createSignedUrl: async path => files.has('decision-files/' + path) ? {data: {signedUrl: URL.createObjectURL(files.get('decision-files/' + path))}, error: null} : {data: null, error: {message: 'الملف غير موجود'}}
     })},
     channel: () => ({on() { return this; }, subscribe() { return this; }})
