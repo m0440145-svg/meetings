@@ -167,7 +167,10 @@
         if (d && d.classList && d.classList.contains('mm-group')) d.open ? window.__mmOpen.add(d.dataset.mmKey) : window.__mmOpen.delete(d.dataset.mmKey);
       }, true);
     }
-    const group = (key, t, type, n, inner) => `<details class="mm-group" data-mm-key="${esc(key)}" style="grid-column:1/-1;border:1px solid #e7dfd6;border-radius:14px;background:#fff;padding:0 16px"${window.__mmOpen.has(key) ? ' open' : ''}><summary style="cursor:pointer;padding:14px 0;font-weight:700">${esc(t)} ${type ? `<span class="status-pill">${esc(type)}</span>` : ''} <span class="meta">(${n} عضو)</span></summary><div class="cards-grid" style="padding-bottom:16px">${inner}</div></details>`;
+    // ألوان الجهات من ألوان هوية الجمعية (برتقالي/عنبري/بني/طيني/رملي/رمادي دافئ)
+    const palette = ['#cf6028', '#f18927', '#8a3f17', '#b8795a', '#d9a066', '#7a6a62', '#a8461a', '#e0743a'];
+    const colorOf = key => { let h = 0; for (const c of String(key)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return palette[h % palette.length]; };
+    const group = (key, t, type, n, inner) => { const gc = key === '__none' ? '#afa5a2' : colorOf(key); return `<details class="mm-group" data-mm-key="${esc(key)}" style="grid-column:1/-1;border:1px solid ${gc}55;border-inline-start:7px solid ${gc};border-radius:14px;background:#fff;padding:0 16px;--gc:${gc}"${window.__mmOpen.has(key) ? ' open' : ''}><summary style="cursor:pointer;padding:14px 0;font-weight:700"><i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${gc};margin-inline-end:8px;vertical-align:middle"></i>${esc(t)} ${type ? `<span class="status-pill">${esc(type)}</span>` : ''} <span class="meta">(${n} عضو)</span></summary><div class="cards-grid" style="padding-bottom:16px">${inner}</div></details>`; };
     let groups = bodies.map(b => {
       const ms = links.filter(l => l.committee_id === b.id && byId.has(l.user_id));
       ms.forEach(l => linked.add(l.user_id));
