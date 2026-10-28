@@ -150,7 +150,25 @@
     if (error) return loadFailed('الأعضاء', error);
     profiles = data || [];
     setText('#statMembers', profiles.length);
-    setHtml('#membersGrid', profiles.map(x => `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}${x.is_manual ? ' • <span class="status-pill">مضاف يدويًا</span>' : ''}</div>${x.is_manual ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-member="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-del-member="${esc(x.id)}">حذف</button></div>` : ''}</article>`).join(''));
+    let bodies = [], links = [];
+    try {
+      const [b, l] = await Promise.all([db.from('committees').select('*'), db.from('committee_members').select('committee_id,user_id,committee_role')]);
+      bodies = b.data || []; links = l.data || [];
+    } catch (e) { bodies = []; links = []; }
+    const byId = new Map(profiles.map(p => [p.id, p]));
+    const order = {'مجلس إدارة': 0, 'جمعية عمومية': 1, 'لجنة': 2};
+    bodies.sort((a, b) => (order[a.type] ?? 3) - (order[b.type] ?? 3) || String(a.name).localeCompare(String(b.name), 'ar'));
+    const linked = new Set();
+    const head = (t, type, n) => `<h3 class="mm-group" style="grid-column:1/-1;margin:14px 0 0">${esc(t)} ${type ? `<span class="status-pill">${esc(type)}</span>` : ''} <span class="meta">(${n})</span></h3>`;
+    let groups = bodies.map(b => {
+      const ms = links.filter(l => l.committee_id === b.id && byId.has(l.user_id));
+      ms.forEach(l => linked.add(l.user_id));
+      return head(b.name, b.type, ms.length) + (ms.length ? ms.map(l => memberCard(byId.get(l.user_id), l.committee_role)).join('') : '<p class="meta" style="grid-column:1/-1">لا يوجد أعضاء في هذه الجهة بعد</p>');
+    }).join('');
+    const rest = profiles.filter(p => !linked.has(p.id));
+    if (rest.length) groups += head('أعضاء بدون جهة', '', rest.length) + rest.map(x => memberCard(x, '')).join('');
+    setHtml('#membersGrid', groups);
+    function memberCard(x, role) { return `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(role || x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}${x.is_manual ? ' • <span class="status-pill">مضاف يدويًا</span>' : ''}</div>${x.is_manual ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-member="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-del-member="${esc(x.id)}">حذف</button></div>` : ''}</article>`; }
     window.ehsanMembers = {profiles: profiles.slice(), reload: () => loadProfiles()};
     setHtml('#taskAssignee', profiles.map(x => `<option value="${x.id}">${esc(x.full_name || 'عضو')}</option>`).join(''));
   }
