@@ -139,7 +139,9 @@
     const {data, error} = await db.from('committees').select('*').order('name');
     if (error) return loadFailed('اللجان', error);
     setHtml('#meetingCommittee', (data || []).map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join(''));
-    setHtml('#committeesGrid', (data || []).map(x => `<article><div class="committee-head"><div class="member-avatar">◉</div><div><strong>${esc(x.name)}</strong><div class="meta">${esc(x.description || '')}</div></div></div></article>`).join('') || '<article>لا توجد لجان.</article>');
+    window.ehsanCommittees = {rows: (data || []).slice(), reload: () => loadCommittees()};
+    // type وstart_date يوجدان بعد الترحيل 012؛ قبله تظهر البطاقة كما كانت
+    setHtml('#committeesGrid', (data || []).map(x => `<article><div class="committee-head"><div class="member-avatar">◉</div><div><strong>${esc(x.name)}</strong>${x.type ? ` <span class="status-pill">${esc(x.type)}</span>` : ''}<div class="meta">${esc(x.description || '')}</div>${x.start_date ? `<div class="meta">تاريخ البداية: ${esc(x.start_date)}</div>` : ''}</div></div>${x.type !== undefined ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-body="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-import-body="${esc(x.id)}">استيراد أعضاء Excel</button> <button type="button" class="btn small ghost" data-tpl-body="${esc(x.id)}">نموذج Excel</button></div>` : ''}</article>`).join('') || '<article>لا توجد لجان.</article>');
   }
 
   let profiles = [];
