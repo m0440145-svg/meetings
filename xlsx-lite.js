@@ -71,6 +71,76 @@
       }
       return out;
     },
+    // قارئ xlsx مصغّر: يعيد [{name, rows: [[نص...]]}] . يدعم STORE وDEFLATE (عبر DecompressionStream) ونصوص sharedStrings وinlineStr.
+    // لا يدعم الملفات المشفّرة ولا ZIP64 ولا صيغة xls القديمة. يُقيَّد بـ 5000 صف و100 عمود لكل ورقة.
+    async read(buf) {
+      const u8 = new Uint8Array(buf), dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), dec = new TextDecoder('utf-8');
+      let e = -1; for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+      if (e < 0) throw new Error('الملف ليس بصيغة xlsx صالحة (احفظه من Excel بصيغة .xlsx أو استخدم CSV)');
+      const count = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const entries = {};
+      for (let i = 0; i < count; i++) {
+        if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('الملف تالف');
+        const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+        entries[dec.decode(u8.subarray(p + 46, p + 46 + nl))] = {method, csize, off}; p += 46 + nl + el + cl;
+      }
+      const get = async name => {
+        const en = entries[name]; if (!en) return null;
+        const start = en.off + 30 + dv.getUint16(en.off + 26, true) + dv.getUint16(en.off + 28, true), raw = u8.subarray(start, start + en.csize);
+        if (en.method === 0) return dec.decode(raw);
+        if (en.method !== 8) throw new Error('طريقة ضغط غير مدعومة في الملف');
+        if (typeof DecompressionStream === 'undefined') throw new Error('هذا المتصفح لا يدعم قراءة xlsx؛ استخدم متصفحًا أحدث أو احفظ الملف بصيغة CSV');
+        return dec.decode(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      };
+      const parse = s => { const d = new DOMParser().parseFromString(s, 'application/xml'); if (d.getElementsByTagName('parsererror').length) throw new Error('محتوى الملف غير صالح'); return d; };
+      const textOf = el => [...el.getElementsByTagName('t')].filter(t => !t.closest('rPh')).map(t => t.textContent).join('');
+      const wbXml = await get('xl/workbook.xml'); if (!wbXml) throw new Error('الملف ليس مصنّف Excel');
+      const RNS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+      const rels = {}; const relXml = await get('xl/_rels/workbook.xml.rels');
+      if (relXml) [...parse(relXml).getElementsByTagName('Relationship')].forEach(r => { rels[r.getAttribute('Id')] = r.getAttribute('Target'); });
+      const ssXml = await get('xl/sharedStrings.xml'); const shared = ssXml ? [...parse(ssXml).getElementsByTagName('si')].map(textOf) : [];
+      const colIdx = ref => { let n = 0; for (const ch of ref.replace(/[0-9]/g, '')) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+      const out = [];
+      for (const sh of [...parse(wbXml).getElementsByTagName('sheet')]) {
+        const rid = sh.getAttributeNS(RNS, 'id') || sh.getAttribute('r:id'); let target = rels[rid]; if (!target) continue;
+        target = target.startsWith('/') ? target.slice(1) : 'xl/' + target.replace(/^\.\//, '');
+        const sx = await get(target); if (!sx) continue;
+        const rows = [];
+        for (const row of [...parse(sx).getElementsByTagName('row')].slice(0, 5000)) {
+          const r = []; let fallback = 0;
+          for (const c of [...row.getElementsByTagName('c')]) {
+            const ci = c.getAttribute('r') ? colIdx(c.getAttribute('r')) : fallback; fallback = ci + 1; if (ci > 99) continue;
+            const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0]?.textContent ?? '';
+            let val;
+            if (t === 's') val = shared[parseInt(v, 10)] ?? '';
+            else if (t === 'inlineStr') val = textOf(c);
+            else if (t === 'b') val = v === '1' ? 'TRUE' : 'FALSE';
+            else if (t === 'str' || t === 'e') val = v;
+            else val = /^-?\d+(\.\d+)?[eE][+-]?\d+$/.test(v) ? String(Math.round(Number(v))) : v;   // أرقام كبيرة (جوال) بصيغة علمية
+            r[ci] = String(val).trim();
+          }
+          const rn = parseInt(row.getAttribute('r'), 10); while (rn > 0 && rows.length < rn - 1 && rows.length < 5000) rows.push([]);   // الصفوف الفارغة المحذوفة من الملف
+          rows.push(Array.from(r, x => x ?? ''));
+        }
+        out.push({name: sh.getAttribute('name'), rows});
+      }
+      if (!out.length) throw new Error('لا توجد أوراق في الملف');
+      return out;
+    },
+    // CSV بسيط (UTF-8، الفاصل , أو ; ، علامات الاقتباس)
+    readCsv(text) {
+      text = String(text).replace(/^﻿/, ''); const first = text.split(/\r?\n/)[0] || ''; const sep = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ';' : ',';
+      const rows = []; let row = [], cur = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === sep) { row.push(cur.trim()); cur = ''; }
+        else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur.trim()); cur = ''; rows.push(row); row = []; }
+        else cur += ch;
+      }
+      if (cur !== '' || row.length) { row.push(cur.trim()); rows.push(row); }
+      return [{name: 'CSV', rows: rows.slice(0, 5000)}];
+    },
     download(blob, filename) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
   };
 })();

@@ -95,7 +95,7 @@
   DM.loadRefs = async (force = false) => {
     if (!force && Date.now() - DM.refs.loadedAt < 60000) return DM.refs;
     const [c, u, p, m] = await Promise.all([
-      DM.db.from('committees').select('id,name,type').order('name'), DM.db.from('org_units').select('*').order('name'),
+      DM.db.from('committees').select('*').order('name'), DM.db.from('org_units').select('*').order('name'),
       DM.db.from('profiles').select('id,full_name,is_active').order('full_name'), DM.db.from('meetings').select('id,title,gregorian_date,committee_id,meeting_no').order('gregorian_date', {ascending: false}).limit(500)
     ]);
     DM.refs = {committees: c.data || [], units: u.data || [], profiles: p.data || [], meetings: m.data || [], loadedAt: Date.now()};
