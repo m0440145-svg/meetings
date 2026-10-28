@@ -159,14 +159,22 @@
     const order = {'مجلس إدارة': 0, 'جمعية عمومية': 1, 'لجنة': 2};
     bodies.sort((a, b) => (order[a.type] ?? 3) - (order[b.type] ?? 3) || String(a.name).localeCompare(String(b.name), 'ar'));
     const linked = new Set();
-    const head = (t, type, n) => `<h3 class="mm-group" style="grid-column:1/-1;margin:14px 0 0">${esc(t)} ${type ? `<span class="status-pill">${esc(type)}</span>` : ''} <span class="meta">(${n})</span></h3>`;
+    window.__mmOpen = window.__mmOpen || new Set();
+    if (!window.__mmBound) {
+      window.__mmBound = true;
+      document.addEventListener('toggle', e => {
+        const d = e.target;
+        if (d && d.classList && d.classList.contains('mm-group')) d.open ? window.__mmOpen.add(d.dataset.mmKey) : window.__mmOpen.delete(d.dataset.mmKey);
+      }, true);
+    }
+    const group = (key, t, type, n, inner) => `<details class="mm-group" data-mm-key="${esc(key)}" style="grid-column:1/-1;border:1px solid #e7dfd6;border-radius:14px;background:#fff;padding:0 16px"${window.__mmOpen.has(key) ? ' open' : ''}><summary style="cursor:pointer;padding:14px 0;font-weight:700">${esc(t)} ${type ? `<span class="status-pill">${esc(type)}</span>` : ''} <span class="meta">(${n} عضو)</span></summary><div class="cards-grid" style="padding-bottom:16px">${inner}</div></details>`;
     let groups = bodies.map(b => {
       const ms = links.filter(l => l.committee_id === b.id && byId.has(l.user_id));
       ms.forEach(l => linked.add(l.user_id));
-      return head(b.name, b.type, ms.length) + (ms.length ? ms.map(l => memberCard(byId.get(l.user_id), l.committee_role)).join('') : '<p class="meta" style="grid-column:1/-1">لا يوجد أعضاء في هذه الجهة بعد</p>');
+      return group(b.id, b.name, b.type, ms.length, ms.length ? ms.map(l => memberCard(byId.get(l.user_id), l.committee_role)).join("") : "<p class=\"meta\">لا يوجد أعضاء في هذه الجهة بعد</p>");
     }).join('');
     const rest = profiles.filter(p => !linked.has(p.id));
-    if (rest.length) groups += head('أعضاء بدون جهة', '', rest.length) + rest.map(x => memberCard(x, '')).join('');
+    if (rest.length) groups += group('__none', 'أعضاء بدون جهة', '', rest.length, rest.map(x => memberCard(x, '')).join(''));
     setHtml('#membersGrid', groups);
     function memberCard(x, role) { return `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(role || x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}${x.is_manual ? ' • <span class="status-pill">مضاف يدويًا</span>' : ''}</div>${x.is_manual ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-member="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-del-member="${esc(x.id)}">حذف</button></div>` : ''}</article>`; }
     window.ehsanMembers = {profiles: profiles.slice(), reload: () => loadProfiles()};
