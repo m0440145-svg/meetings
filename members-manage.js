@@ -16,7 +16,10 @@
   }
   async function myAdmin() {
     try {
-      const c = await db(); const {data} = await c.rpc('is_admin');
+      const c = await db();
+      const s = await c.auth.getSession();
+      if (!s || !s.data || !s.data.session) { document.documentElement.dataset.mmAdmin = '0'; return false; } // بلا جلسة: لا نستدعي الخادم (يتفادى 401 في الكونسول)
+      const {data} = await c.rpc('is_admin');
       document.documentElement.dataset.mmAdmin = data === true ? '1' : '0';
       return data === true;
     } catch { return false; }
@@ -67,5 +70,5 @@
     catch (ex) { toast(ex.message); }
   });
 
-  (async () => { await myAdmin(); addButton(); new MutationObserver(addButton).observe(document.body, {childList: true, subtree: true}); })();
+  (async () => { await myAdmin(); try { (await db()).auth.onAuthStateChange(() => { setTimeout(myAdmin, 0); }); } catch {} addButton(); new MutationObserver(addButton).observe(document.body, {childList: true, subtree: true}); })();
 })();
