@@ -159,26 +159,83 @@
     const order = {'مجلس إدارة': 0, 'جمعية عمومية': 1, 'لجنة': 2};
     bodies.sort((a, b) => (order[a.type] ?? 3) - (order[b.type] ?? 3) || String(a.name).localeCompare(String(b.name), 'ar'));
     const linked = new Set();
-    window.__mmOpen = window.__mmOpen || new Set();
-    if (!window.__mmBound) {
-      window.__mmBound = true;
-      document.addEventListener('toggle', e => {
-        const d = e.target;
-        if (d && d.classList && d.classList.contains('mm-group')) d.open ? window.__mmOpen.add(d.dataset.mmKey) : window.__mmOpen.delete(d.dataset.mmKey);
-      }, true);
-    }
-    // ألوان الجهات من ألوان هوية الجمعية (برتقالي/عنبري/بني/طيني/رملي/رمادي دافئ)
+    // عرض الجهات كبطاقات ملونة؛ الضغط على بطاقة يعرض أعضاءها في لوحة أسفلها. ألوان الجهات من ألوان هوية الجمعية.
     const palette = ['#cf6028', '#f18927', '#8a3f17', '#b8795a', '#d9a066', '#7a6a62', '#a8461a', '#e0743a'];
     const colorOf = key => { let h = 0; for (const c of String(key)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return palette[h % palette.length]; };
-    const group = (key, t, type, n, inner) => { const gc = key === '__none' ? '#afa5a2' : colorOf(key); return `<details class="mm-group" data-mm-key="${esc(key)}" style="grid-column:1/-1;border:1px solid ${gc}55;border-inline-start:7px solid ${gc};border-radius:14px;background:#fff;padding:0 16px;--gc:${gc}"${window.__mmOpen.has(key) ? ' open' : ''}><summary style="cursor:pointer;padding:14px 0;font-weight:700"><i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${gc};margin-inline-end:8px;vertical-align:middle"></i>${esc(t)} ${type ? `<span class="status-pill">${esc(type)}</span>` : ''} <span class="meta">(${n} عضو)</span></summary><div class="cards-grid" style="padding-bottom:16px">${inner}</div></details>`; };
-    let groups = bodies.map(b => {
+    const ICONS = {'مجلس إدارة': '⚖', 'جمعية عمومية': '◎', 'لجنة': '◉'};
+    if (!document.getElementById('mb-style')) {
+      const st = document.createElement('style'); st.id = 'mb-style';
+      st.textContent = `
+.mb-wrap{grid-column:1/-1;display:grid;gap:16px}
+.mb-stats{display:flex;flex-wrap:wrap;gap:10px}
+.mb-stats span{background:var(--card,#fff);border:1px solid var(--line,#eadfd8);border-radius:14px;padding:8px 16px;font-size:14px;color:var(--muted,#6b5f59)}
+.mb-stats b{font-size:20px;color:var(--primary,#cf6028);margin-inline-end:6px}
+.mb-tools input{width:100%;max-width:420px;border:1px solid var(--line,#eadfd8);border-radius:12px;padding:10px 14px;background:var(--card,#fff);color:inherit}
+.mb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.mb-tile{position:relative;display:grid;gap:8px;justify-items:start;text-align:start;font:inherit;color:inherit;cursor:pointer;background:var(--card,#fff);border:1px solid var(--line,#eadfd8);border-radius:20px;padding:18px 16px 14px;overflow:hidden;transition:transform .18s,box-shadow .18s,border-color .18s;box-shadow:0 6px 18px rgba(68,46,31,.06)}
+.mb-tile::before{content:"";position:absolute;inset:0 0 auto 0;height:6px;background:var(--gc)}
+.mb-tile:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(68,46,31,.14);border-color:var(--gc)}
+.mb-tile:focus-visible{outline:3px solid var(--accent,#f18927);outline-offset:2px}
+.mb-tile.sel{border-color:var(--gc);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc) 28%,transparent),0 14px 28px rgba(68,46,31,.14)}
+.mb-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;color:#fff;background:var(--gc)}
+.mb-name{font-weight:800;font-size:16px;line-height:1.5}
+.mb-count{font-size:13px;color:var(--muted,#6b5f59)}
+.mb-count b{font-size:22px;color:var(--gc);margin-inline-end:4px}
+.mb-stack{display:flex;align-items:center;min-height:30px}
+.mb-stack i{width:30px;height:30px;border-radius:50%;background:var(--gc);color:#fff;display:grid;place-items:center;font-size:12px;font-style:normal;font-weight:800;border:2px solid var(--card,#fff);margin-inline-end:-8px}
+.mb-stack i.more{background:var(--bg,#f9f4ee);color:var(--muted,#6b5f59);border-color:var(--card,#fff)}
+.mb-panel{background:var(--card,#fff);border:1px solid var(--line,#eadfd8);border-inline-start:7px solid var(--gc,#cf6028);border-radius:20px;padding:16px 18px;display:grid;gap:14px;animation:mbIn .18s ease-out}
+@keyframes mbIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.mb-panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.mb-panel-head h3{margin:0;font-size:19px}
+.mb-panel .cards-grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.mb-empty{color:var(--muted,#6b5f59);margin:0}
+@media(prefers-reduced-motion:reduce){.mb-tile,.mb-panel{transition:none;animation:none}}
+html[data-theme=dark] .mb-tile,html[data-theme=dark] .mb-panel,html[data-theme=dark] .mb-stats span,html[data-theme=dark] .mb-tools input{background:#2b2521}
+html[data-theme=dark] .mb-stack i{border-color:#2b2521}`;
+      document.head.append(st);
+    }
+    const gdata = bodies.map(b => {
       const ms = links.filter(l => l.committee_id === b.id && byId.has(l.user_id));
       ms.forEach(l => linked.add(l.user_id));
-      return group(b.id, b.name, b.type, ms.length, ms.length ? ms.map(l => memberCard(byId.get(l.user_id), l.committee_role)).join("") : "<p class=\"meta\">لا يوجد أعضاء في هذه الجهة بعد</p>");
-    }).join('');
+      return {key: b.id, title: b.name, type: b.type, color: colorOf(b.id), members: ms.map(l => ({p: byId.get(l.user_id), role: l.committee_role}))};
+    });
     const rest = profiles.filter(p => !linked.has(p.id));
-    if (rest.length) groups += group('__none', 'أعضاء بدون جهة', '', rest.length, rest.map(x => memberCard(x, '')).join(''));
-    setHtml('#membersGrid', groups);
+    if (rest.length) gdata.push({key: '__none', title: 'أعضاء بدون جهة', type: '', color: '#afa5a2', members: rest.map(p => ({p, role: ''}))});
+    window.__mmData = {groups: gdata, card: memberCard, profiles};
+    if (window.__mmSel && !gdata.some(g => g.key === window.__mmSel)) window.__mmSel = null;
+    const tile = g => `<button type="button" class="mb-tile${window.__mmSel === g.key ? ' sel' : ''}" data-mb="${esc(g.key)}" style="--gc:${g.color}" aria-pressed="${window.__mmSel === g.key}">
+      <span class="mb-ic" aria-hidden="true">${g.key === '__none' ? '☺' : (ICONS[g.type] || '◉')}</span>
+      <span class="mb-name">${esc(g.title)}</span>${g.type ? `<span class="status-pill">${esc(g.type)}</span>` : ''}
+      <span class="mb-count"><b>${g.members.length}</b>عضو</span>
+      <span class="mb-stack" aria-hidden="true">${g.members.slice(0, 4).map(m => `<i>${esc((m.p.full_name || 'ع')[0])}</i>`).join('')}${g.members.length > 4 ? `<i class="more">+${g.members.length - 4}</i>` : ''}</span></button>`;
+    const manual = profiles.filter(p => p.is_manual).length;
+    setHtml('#membersGrid', `<div class="mb-wrap"><div class="mb-stats"><span><b>${profiles.length}</b>إجمالي الأعضاء</span><span><b>${bodies.length}</b>جهة</span><span><b>${manual}</b>مضاف يدويًا</span></div>
+      <div class="mb-tools"><input type="search" id="mbSearch" placeholder="ابحث باسم عضو أو جوال أو بريد…" aria-label="بحث في الأعضاء" autocomplete="off"></div>
+      <div class="mb-grid">${gdata.map(tile).join('')}</div><div id="mbPanel"></div></div>`);
+    renderMbPanel();
+    if (!window.__mmBound) {
+      window.__mmBound = true;
+      document.addEventListener('click', e => {
+        const t = e.target.closest('[data-mb]');
+        if (t) { window.__mmSel = window.__mmSel === t.dataset.mb ? null : t.dataset.mb; document.querySelectorAll('.mb-tile').forEach(x => { const on = x.dataset.mb === window.__mmSel; x.classList.toggle('sel', on); x.setAttribute('aria-pressed', on); }); const s = document.getElementById('mbSearch'); if (s) s.value = ''; renderMbPanel(); document.getElementById('mbPanel')?.scrollIntoView({behavior: 'smooth', block: 'nearest'}); return; }
+        if (e.target.closest('[data-mb-close]')) { window.__mmSel = null; document.querySelectorAll('.mb-tile').forEach(x => { x.classList.remove('sel'); x.setAttribute('aria-pressed', 'false'); }); renderMbPanel(); }
+      });
+      document.addEventListener('input', e => { if (e.target.id === 'mbSearch') renderMbPanel(); });
+    }
+    function renderMbPanel() {
+      const box = document.getElementById('mbPanel'); const d = window.__mmData; if (!box || !d) return;
+      const term = (document.getElementById('mbSearch')?.value || '').trim().toLowerCase();
+      if (term) {
+        const hits = d.profiles.filter(p => [p.full_name, p.phone, p.email, p.job_title, p.organization].some(v => String(v || '').toLowerCase().includes(term)));
+        box.innerHTML = `<section class="mb-panel" style="--gc:#cf6028"><div class="mb-panel-head"><h3>نتائج البحث <span class="meta">(${hits.length})</span></h3></div>${hits.length ? `<div class="cards-grid">${hits.map(p => d.card(p, '')).join('')}</div>` : '<p class="mb-empty">لا نتائج مطابقة</p>'}</section>`;
+        return;
+      }
+      const g = d.groups.find(x => x.key === window.__mmSel);
+      if (!g) { box.innerHTML = ''; return; }
+      box.innerHTML = `<section class="mb-panel" style="--gc:${g.color}"><div class="mb-panel-head"><h3>${esc(g.title)} ${g.type ? `<span class="status-pill">${esc(g.type)}</span>` : ''} <span class="meta">(${g.members.length} عضو)</span></h3><button type="button" class="btn small ghost" data-mb-close>إغلاق</button></div>
+        ${g.members.length ? `<div class="cards-grid">${g.members.map(m => d.card(m.p, m.role)).join('')}</div>` : '<p class="mb-empty">لا يوجد أعضاء في هذه الجهة بعد. أضفهم من «استيراد من Excel» أو «إضافة عضو يدويًا».</p>'}</section>`;
+    }
     function memberCard(x, role) { return `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(role || x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}${x.is_manual ? ' • <span class="status-pill">مضاف يدويًا</span>' : ''}</div>${x.is_manual ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-member="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-del-member="${esc(x.id)}">حذف</button></div>` : ''}</article>`; }
     window.ehsanMembers = {profiles: profiles.slice(), reload: () => loadProfiles()};
     setHtml('#taskAssignee', profiles.map(x => `<option value="${x.id}">${esc(x.full_name || 'عضو')}</option>`).join(''));
