@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الدليل المصوّر — منصة اجتماعات جمعية الإحسان (النسخة الأولى)</title>
+<style>
+@page{size:A4 landscape;margin:12mm 14mm 14mm}
+:root{--primary:#cf6028;--accent:#f18927;--muted:#afa5a2;--bg:#f9f4ee;--ink:#575650;--line:#eadfd8}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Cairo","Tajawal","Segoe UI",Tahoma,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.75;font-size:14px}
+.page{page-break-after:always;break-after:page;display:flex;flex-direction:column;min-height:176mm}
+.page:last-child{page-break-after:auto;break-after:auto}
+.run-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary);padding-bottom:6px;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.run-head strong{color:var(--primary)}
+.run-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:6px;display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+h1{color:var(--primary);font-size:28px;margin:0 0 6px}
+h2{color:var(--primary);font-size:20px;margin:0 0 8px}
+h3{margin:0 0 4px;font-size:15.5px;color:var(--ink)}
+.status{background:#fff7e6;border:1px solid #f0d9a8;color:#6b4a07;border-radius:10px;padding:7px 12px;margin:8px 0;font-size:12.5px}
+.warn{background:#fdeaea;border:1px solid #f0c7c7;color:#8f2d2d;border-radius:10px;padding:7px 12px;margin:8px 0;font-size:12.5px}
+.chip{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:1px 10px;font-size:12px;margin-inline-end:6px}
+.badge-v{background:#e9f6ef;color:#17623f;border-color:#bfe3cf}
+.badge-u{background:#fff1df;color:#7a4a0c;border-color:#f0d9a8}
+.badge-d{background:#fdeaea;color:#8f2d2d;border-color:#f0c7c7}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:right;vertical-align:top}
+th{background:var(--bg)}
+.btn{display:inline-block;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border-radius:7px;padding:0 8px;font-weight:700;white-space:nowrap}
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1}
+.steps.one{grid-template-columns:1fr}
+.step{border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:#fff}
+.step p{margin:0}
+.no{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;margin-inline-end:6px;font-size:13px}
+.fig{margin:0}
+.fig .frame{aspect-ratio:800/430;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.fig.phone .frame{aspect-ratio:390/560;max-height:96mm;width:auto;margin-inline:auto;max-width:64mm}
+.fig img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.fig figcaption{font-size:11.5px;color:var(--muted);margin-top:3px}
+.cover{background:linear-gradient(135deg,#3d332e,#5a3d2d);color:#fff;border-radius:18px;padding:28px 34px;flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.cover img{width:120px;background:#fff;border-radius:12px;padding:8px;align-self:flex-start}
+.cover h1{color:#fff;font-size:34px}
+.cover p{margin:2px 0;color:#f4e9e1}
+.p2 th,.p2 td{padding:2px 8px;font-size:11.5px;line-height:1.5}.p2 .status{padding:5px 10px;margin:5px 0;font-size:12px}.p2 p{font-size:13px}ul.t{margin:0;padding-inline-start:18px}
+@media screen{body{background:#eee}.page{background:#fff;max-width:1120px;margin:14px auto;padding:16px 22px;border-radius:10px}}
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="cover">
+    <img src="../../assets/logo.svg" alt="شعار جمعية الإحسان للخدمات الاجتماعية">
+    <p>جمعية الإحسان للخدمات الاجتماعية</p>
+    <h1>دليل المستخدم الشامل والمصوّر</h1>
+    <p>منصة إدارة الاجتماعات والقرارات — دليل المستخدم والإدارة</p>
+    <p style="margin-top:14px;font-size:13px">النسخة الأولى (مسودة 0.2) · 29 أكتوبر 2026</p>
+    <div class="status" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff">النسخة الأولى تغطي الخدمات التي أمكن تصويرها من الموقع الحي. باقي الخدمات مدرجة في سجل التحقق بحالتها. اسم المنصة ورمز QR وخط الجمعية بانتظار الاعتماد.</div>
+  </div>
+</section>
+
+<section class="page p2">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الدليل المصوّر</span><span>المقدمة والفهرس</span></div>
+  <h1>مقدمة وفهرس</h1>
+  <p style="margin:0 0 6px">المنصة نظام عربي لإدارة اجتماعات المجلس واللجان والجمعية العمومية: جدولة الاجتماع ودعوة الأعضاء، وتسجيل الحضور، والتصويت، والمحاضر والتوقيع الإلكتروني، ثم تحويل القرارات إلى مهام تُتابَع حتى الإقفال. لا تبثّ المنصة فيديو؛ يُعقد الاجتماع الافتراضي عبر رابط خارجي (Zoom أو Teams أو Meet).</p>
+  <p style="margin:0 0 6px"><b>رموز الدليل:</b> <span class="chip badge-v">مُصوَّر من الموقع الحي</span> <span class="chip badge-u">لم يكتمل اختباره</span> <span class="chip badge-d">قيد التطوير</span> · الدائرة البرتقالية المرقّمة تحدد ترتيب الأزرار والحقول في الصورة، والإطار البرتقالي يحدد العنصر المقصود.</p>
+  <div class="status"><b>حدود هذه النسخة:</b> اللقطات حقيقية بحساب مدير على الموقع الحي، ودقتها 800 بكسل عرضًا (لقطات الهاتف 390 بكسل). لم تُنفَّذ عمليات الحفظ أو الحذف أثناء التصوير حتى لا تتأثر بيانات الجمعية، فصور «النتيجة بعد الحفظ» غير موجودة. تحتوي بعض اللقطات أسماء بنود ومرفقات من اجتماع قائم، وتُراجَع قبل النشر العام.</div>
+  <table>
+    <tr><th style="width:8%">الباب</th><th>الخدمة</th><th style="width:20%">الحالة في هذه النسخة</th></tr>
+    <tr><td>3</td><td>إنشاء اجتماع جديد (نموذج مصوّر منفصل: <b>نموذج-إنشاء-اجتماع.pdf</b>)، إدارة الاجتماع: التعديل والحذف وجدول الأعمال والمرفقات وتسجيل الاجتماع</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>5</td><td>الأعضاء: التصفح والبحث، الإضافة اليدوية، الاستيراد من Excel</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>7</td><td>التصويت والنصاب (نموذج الإنشاء)</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>8</td><td>المحاضر والتوقيع الإلكتروني</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>9</td><td>القرارات ومتابعة التنفيذ</td><td><span class="chip badge-u">لوحة فارغة لحساب مدير النظام (ملاحظة 3)</span></td></tr>
+    <tr><td>10</td><td>الجهات (مجلس، لجان، جمعية عمومية) والترشيحات والانتخابات</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>12</td><td>الإشعارات وتفضيلات التنبيه</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>13</td><td>التقارير والتصدير</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>14</td><td>الاستبيانات، التقويم وجدولة الاجتماعات</td><td><span class="chip badge-v">مُصوَّر</span></td></tr>
+    <tr><td>11</td><td>الاستخدام عبر الهاتف</td><td><span class="chip badge-v">مُصوَّر (شاشتان)</span></td></tr>
+    <tr><td>—</td><td>أثناء الاجتماع، مركز الذكاء، غرفة البيانات، الحوكمة والأمن، مركز المرفقات</td><td><span class="chip badge-d">قيد التطوير (انظر الملاحظة 2)</span></td></tr>
+  </table>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>جمعية الإحسان للخدمات الاجتماعية</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الباب الثالث: إدارة الاجتماعات</span><span>إدارة اجتماع قائم</span></div>
+  <h2>إدارة اجتماع قائم: التعديل والحذف وجدول الأعمال والمرفقات والتسجيل</h2>
+  <p style="margin:0 0 6px"><span class="chip">المستخدمون: منشئ الاجتماع أو المدير أو أمين السر</span> <span class="chip">المسار: الاجتماعات ← زر «إدارة» في صف الاجتماع</span></p>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>التعديل والحذف وبنود جدول الأعمال</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-03-إدارة-الاجتماعات/fig-03-09-manage-top.png" alt="نافذة إدارة الاجتماع: زر تعديل البيانات وزر حذف الاجتماع وزر إضافة بند"></div><figcaption>الصورة 3-9: 1 «تعديل البيانات»، 2 «حذف الاجتماع»، 3 «＋ بند».</figcaption></figure>
+      <p>اضغط <span class="btn">إدارة</span> في صف الاجتماع. <b>تعديل البيانات</b> يفتح نموذج التعديل. <b>حذف الاجتماع</b> نهائي ويطلب تأكيدًا. <b>＋ بند</b> يضيف بندًا إلى جدول الأعمال، وزر «حذف» بجانب كل بند يزيله.</p></div>
+    <div class="step"><h3><span class="no">2</span>المرفقات وتسجيل الاجتماع</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-03-إدارة-الاجتماعات/fig-03-10-manage-bottom.png" alt="قسم المرفقات وقسم تسجيل الاجتماع في نافذة الإدارة"></div><figcaption>الصورة 3-10: 1 «＋ مرفق»، 2 «＋ رابط التسجيل».</figcaption></figure>
+      <p><b>＋ مرفق</b> يرفع ملفًا أو أكثر، ويفتح «فتح» الملف أو يحذفه «حذف». قسم <b>تسجيل الاجتماع</b>: اضغط «＋ رابط التسجيل» والصق رابط https من أداة الاجتماع مع تاريخ الاحتفاظ وملاحظة. حذف الرابط لا يحذف التسجيل نفسه.</p></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 3</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الباب الخامس: الأعضاء</span><span>إدارة الأعضاء</span></div>
+  <h2>إدارة الأعضاء: التصفح والإضافة اليدوية والاستيراد من Excel</h2>
+  <p style="margin:0 0 6px"><span class="chip">المستخدمون: المدير وأمين السر (الإضافة والاستيراد)، والجميع للتصفح</span> <span class="chip">المسار: الحوكمة والتوثيق ← الأعضاء</span></p>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>الصفحة وأدواتها</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-05-الدعوات-والأعضاء/fig-05-01-members.png" alt="صفحة الأعضاء: زر إضافة عضو يدويًا وزر الاستيراد من Excel وحقل البحث وبطاقات الجهات"></div><figcaption>الصورة 5-1: 1 «＋ إضافة عضو يدويًا»، 2 «استيراد من Excel»، 3 البحث، 4 بطاقة جهة.</figcaption></figure>
+      <p>في الأعلى ثلاثة أرقام: إجمالي الأعضاء وعدد الجهات والمضافين يدويًا. اكتب في <b>البحث</b> اسم العضو أو جواله أو بريده. اضغط <b>بطاقة الجهة</b> لتظهر أسماء أعضائها ودور كل عضو، وتضغطها ثانية لطيّها. بطاقة «أعضاء بدون جهة» تضم من لم يُربط بجهة.</p></div>
+    <div class="step"><h3><span class="no">2</span>إضافة عضو واستيراد قائمة</h3>
+      <p><b>إضافة يدوية:</b> اضغط «＋ إضافة عضو يدويًا»، واملأ الاسم (مطلوب) والوظيفة والجوال والبريد، واختر الجهات، ثم احفظ. يظهر العضو بشارة «مضاف يدويًا» مع زري تعديل وحذف. هؤلاء الأعضاء ليس لهم حساب دخول.</p>
+      <p><b>الاستيراد:</b> من صفحة اللجان نزّل «نموذج Excel» للجهة، واملأه، ثم اضغط «استيراد من Excel» واختر الجهة وارفع الملف. تظهر معاينة تُعلِّم الصفوف الخاطئة والمكررة، وبعد التأكيد تظهر نتيجة كل صف (أُنشئ، رُبط، موجود، خطأ). الحد الأقصى 500 صف في العملية.</p>
+      <div class="status">لم تُصوَّر نافذتا الإضافة والاستيراد لأن إكمالهما يغيّر بيانات الجمعية.</div></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 4</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الباب العاشر: الجهات</span><span>اللجان والمجلس والجمعية العمومية</span></div>
+  <h2>الجهات: المجلس واللجان والجمعية العمومية، والترشيحات والانتخابات</h2>
+  <p style="margin:0 0 6px"><span class="chip">المستخدمون: المدير وأمين السر</span> <span class="chip">المسار: الحوكمة والتوثيق ← اللجان / الترشيحات والانتخابات</span></p>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>اللجان</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-10-الجهات/fig-10-01-committees.png" alt="صفحة اللجان: زر لجنة جديدة وأزرار تعديل واستيراد أعضاء Excel ونموذج Excel على بطاقة جهة"></div><figcaption>الصورة 10-1: 1 «＋ لجنة جديدة»، 2 «تعديل»، 3 «استيراد أعضاء Excel»، 4 «نموذج Excel».</figcaption></figure>
+      <p>لكل جهة نوع (مجلس إدارة، لجنة، جمعية عمومية) وتاريخ بداية يظهر في بطاقتها. «تعديل» يغيّر الاسم والنوع وتاريخ البداية. لأعضاء الجمعية العمومية أنشئ جهة من نوع «جمعية عمومية» ثم استورد أعضاءها.</p></div>
+    <div class="step"><h3><span class="no">2</span>الترشيحات والانتخابات</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-10-الجهات/fig-10-02-elections.png" alt="نموذج انتخاب جديد: العنوان واللجنة وعدد المقاعد وزر إنشاء وفتح باب الترشيح"></div><figcaption>الصورة 10-2: 2 اللجنة، 3 عدد المقاعد، 4 «إنشاء وفتح باب الترشيح». (حقل العنوان فوق الدائرة 2).</figcaption></figure>
+      <p>اكتب <b>العنوان</b>، واختر <b>اللجنة (الناخبون والمرشحون من أعضائها)</b>، وحدد <b>عدد المقاعد</b>، ثم اضغط «إنشاء وفتح باب الترشيح». لم تُجرَّب العملية بعد.</p>
+      <div class="status">لا يوجد تصويت أو فرز داخل هذه الشاشة حتى الآن، وهو ما يحتاج التحقق قبل الاعتماد على المنصة لانتخابات رسمية.</div></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 5</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الأبواب السابع والثامن</span><span>التصويت والمحاضر</span></div>
+  <h2>التصويت والنصاب، والمحاضر والتوقيع</h2>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>إنشاء تصويت</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-07-التصويت/fig-07-01-votes-form.png" alt="نموذج إنشاء تصويت: الاجتماع وموضوع التصويت ونوع التصويت والحد الأدنى للنصاب وزر فتح التصويت للأعضاء"></div><figcaption>الصورة 7-1: 1 الاجتماع، 2 موضوع التصويت، 3 نوع التصويت، 4 الحد الأدنى للنصاب، 5 «فتح التصويت للأعضاء».</figcaption></figure>
+      <p>اختر <b>الاجتماع</b>، واكتب <b>موضوع التصويت</b>، واختر <b>النوع</b> (الافتراضي «معلن»؛ وللتصويت السري يُختار نوعه من القائمة)، وحدد <b>الحد الأدنى للنصاب (عدد الأصوات)</b>، ثم اضغط «فتح التصويت للأعضاء». يظهر التصويت في «سجل التصويتات». شرط المشاركة: تسجيل حضور العضو أولًا.</p></div>
+    <div class="step"><h3><span class="no">2</span>إعداد المحضر والتوقيع</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-08-المحاضر/fig-08-01-minutes.png" alt="نموذج المحضر: اختيار الاجتماع وحقل نص المحضر"></div><figcaption>الصورة 8-1: 1 الاجتماع، 2 نص المحضر.</figcaption></figure>
+      <p>اختر <b>الاجتماع</b>، واكتب <b>نص المحضر</b> («أبرز المناقشات والقرارات…»)، ثم <b>فرص التحسين / التوصيات</b>. في أسفل الصفحة مربع <b>التوقيع</b> (وقّع بالفأرة أو الإصبع) والزر «مسح التوقيع» والزر «حفظ المحضر». تظهر المحاضر المحفوظة في العمود المقابل.</p>
+      <div class="status">لم يُحفظ تصويت أو محضر أثناء التصوير. اسم نوع التصويت السري في القائمة لم يُصوَّر.</div></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 6</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الأبواب 12 و13 و14</span><span>الإشعارات والتقارير والخدمات الإضافية</span></div>
+  <h2>الإشعارات والتقارير والاستبيانات والتقويم</h2>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>تفضيلات التنبيه (للعضو)</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-12-الإشعارات/fig-12-01-notify-prefs.png" alt="شاشة تفضيلات التنبيه: قنوات الاستلام ورقم الجوال وزر حفظ التفضيلات"></div><figcaption>الصورة 12-1: 1 قنوات الاستلام، 2 رقم الجوال، 3 «حفظ التفضيلات».</figcaption></figure>
+      <p>المنظِّم هو من يحدد تكرار التذكير لكل اجتماع (يوميًا، كل يومين، كل 3 أيام، أسبوعيًا، أو قبل الموعد بساعات). من هنا يختار العضو القنوات التي يقبل التنبيه عبرها: <b>واتساب، رسالة نصية، البريد الإلكتروني</b>، ويكتب <b>رقم الجوال</b>، ثم «حفظ التفضيلات».</p></div>
+    <div class="step"><h3><span class="no">2</span>التقارير والتصدير</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-13-التقارير/fig-13-01-reports.png" alt="صفحة التقارير والقياس: زر تصدير الاجتماعات CSV وزر تصدير المهام CSV"></div><figcaption>الصورة 13-1: 1 «تصدير الاجتماعات CSV»، 2 «تصدير المهام CSV».</figcaption></figure>
+      <p>تعرض الصفحة مؤشرات مثل الاجتماعات في آخر 12 شهرًا وتفصيلها حسب اللجنة. يصدّر الزران ملف CSV يُفتح في Excel. وفي وحدة القرارات تصدير Excel وطباعة PDF مستقلان.</p></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 7</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الباب الرابع عشر</span><span>الاستبيانات والتقويم</span></div>
+  <h2>الاستبيانات والتقويم وجدولة الاجتماعات</h2>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>إنشاء استبيان</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-14-الخدمات-الإضافية/fig-14-01-survey-editor.png" alt="نافذة استبيان جديد: العنوان والجمهور وموعد الانتهاء وخيار المجهول ونوع السؤال"></div><figcaption>الصورة 14-1: 1 العنوان، 2 الجمهور، 3 ينتهي في، 4 مجهول، 5 نوع السؤال.</figcaption></figure>
+      <p>الحوكمة ← <b>الاستبيانات</b> ← «＋ استبيان جديد». اكتب العنوان والوصف، واختر <b>الجمهور</b> (جميع الأعضاء أو جهة)، وموعد الانتهاء الاختياري، و<b>مجهول</b> إن أردت إخفاء الأسماء. أضف الأسئلة (اختيار واحد، متعدد، تقييم 1–5، نص) بالزر «＋ سؤال»، واحفظ مسودة، ثم «نشر» ليصل إشعار للأعضاء. النتائج وتصديرها من «النتائج». استطلاع الموعد من «استطلاع المواعيد».</p></div>
+    <div class="step"><h3><span class="no">2</span>التقويم وجدولة الاجتماعات</h3>
+      <figure class="fig"><div class="frame"><img src="figures/الباب-14-الخدمات-الإضافية/fig-14-02-scheduler.png" alt="صفحة جدولة الاجتماعات: زر جدولة اجتماع وأزرار الشهر السابق والتالي واليوم"></div><figcaption>الصورة 14-2: 1 «＋ جدولة اجتماع»، 2 «الشهر السابق»، 3 «الشهر التالي»، 4 «اليوم».</figcaption></figure>
+      <p>إدارة الاجتماعات ← <b>جدولة الاجتماعات</b>: تقويم شهري يمكن تصفيته حسب اللجنة، و«＋ جدولة اجتماع» لإنشاء اجتماع (مع تكرار وكشف تعارض وحجز قاعة). لم تُجرَّب عملية الجدولة.</p></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 8</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · الاستخدام عبر الهاتف</span><span>نسخة الجوال</span></div>
+  <h2>الاستخدام عبر الهاتف</h2>
+  <div class="steps">
+    <div class="step"><h3><span class="no">1</span>الصفحة الرئيسية</h3>
+      <figure class="fig phone"><div class="frame"><img src="figures/الباب-11-الهاتف/fig-m-01-home.png" alt="الصفحة الرئيسية على الهاتف: زر القائمة وزر الوضع الداكن وجرس الإشعارات وزر إنشاء اجتماع"></div><figcaption>الصورة م-1 (390×760): 1 القائمة ☰، 2 الوضع الداكن 🌙، 3 الإشعارات 🔔، 4 «＋ إنشاء اجتماع جديد».</figcaption></figure>
+      <p>على الهاتف تتحول القائمة الجانبية إلى زر ☰ في أعلى الصفحة. البطاقات تتراص عموديًا، والأزرار بعرض كامل.</p></div>
+    <div class="step"><h3><span class="no">2</span>القائمة</h3>
+      <figure class="fig phone"><div class="frame"><img src="figures/الباب-11-الهاتف/fig-m-02-menu.png" alt="القائمة الجانبية المفتوحة على الهاتف: زر اجتماع جديد ومجموعات مساحة العضو وإدارة الاجتماعات"></div><figcaption>الصورة م-2: القائمة مفتوحة فوق الصفحة. الزر البرتقالي «＋ اجتماع جديد» ثم مجموعات قابلة للطي.</figcaption></figure>
+      <p>اضغط ☰ لفتح القائمة، واضغط عنوان المجموعة (مساحة العضو، إدارة الاجتماعات…) لتظهر خدماتها. اختيار خدمة يغلق القائمة. لم تُصوَّر بقية شاشات الجوال (الحضور، التصويت، التوقيع) بعد.</p></div>
+  </div>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 9</span></div>
+</section>
+
+<section class="page">
+  <div class="run-head"><span><strong>منصة اجتماعات جمعية الإحسان</strong> · ملاحظات الفحص</span><span>ما وُجد أثناء التصوير</span></div>
+  <h2>ملاحظات مهمة وُجدت أثناء الفحص الحي</h2>
+  <table>
+    <tr><th style="width:5%">#</th><th style="width:26%">الملاحظة</th><th>التفاصيل</th><th style="width:22%">الإجراء المقترح</th></tr>
+    <tr><td>1</td><td>قسم «تسجيل الاجتماع» يعمل على الموقع الحي</td><td>ظهر في نافذة «إدارة» ببيانات اجتماع قائم، وهذا يؤكد تطبيق الترحيل 013 على الإنتاج.</td><td>لا شيء</td></tr>
+    <tr><td>2</td><td>شاشات من النسخة التجريبية المحلية</td><td>«أثناء الاجتماع» (بدء/إيقاف/تفريغ محلي)، «مركز الذكاء الاصطناعي» (تلخيص محلي)، «غرفة البيانات الآمنة» (زر إضافة مستند تجريبي)، «مركز المرفقات» و«الحوكمة والأمن» تعمل من بيانات المتصفح المحلية ولا تُحفظ على الخادم، فلا تُوثَّق كخدمات متاحة.</td><td>إخفاؤها أو وسمها «تجريبي» لحين ربطها</td></tr>
+    <tr><td>3</td><td>لوحة القرارات فارغة لمدير النظام</td><td>صفحة «لوحة القرارات» تظهر بيضاء دون رسالة لحساب المدير الحالي، لأنه لا يملك دورًا في وحدة القرارات (مدير النظام لا يرى القرارات بقصد فصل المهام). وفي قاعدة البيانات 41 صلاحية و11 إعدادًا و0 قرار. المستخدم يظن أن الصفحة معطلة.</td><td>إظهار رسالة توضيحية، وإسناد دور أمين السر لحساب مناسب من «الإعدادات والصلاحيات»</td></tr>
+    <tr><td>4</td><td>صفحة الاجتماعات: أزرار خارج الشاشة</td><td>جدول الاجتماعات أعرض من الشاشة في العرض الضيق، فيختفي زر «إدارة» ويحتاج تمريرًا أفقيًا.</td><td>تحسين العرض لاحقًا</td></tr>
+    <tr><td>5</td><td>اسم زر الدعوات</td><td>اسمه الفعلي «إرسال الدعوات لأعضاء اللجنة»، وهو في لوحة «الحضور والدعوات» لا في صف الاجتماع.</td><td>مصحَّح في الدليل</td></tr>
+  </table>
+  <div class="run-foot"><span>الإصدار 0.2 (مسودة)</span><span>صفحة 10</span></div>
+</section>
+
+</body>
+</html>
