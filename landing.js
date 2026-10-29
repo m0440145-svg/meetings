@@ -20,11 +20,27 @@
   const DEFAULT_GOALS = ['رفع كفاءة إدارة اجتماعات المجلس واللجان وتنظيمها', 'توثيق المحاضر والقرارات وأرشفتها بصورة موثوقة', 'تعزيز الشفافية والمساءلة ومتابعة تنفيذ القرارات', 'تسهيل التواصل والمشاركة بين أعضاء المجلس واللجان'];
   const DEFAULT_VISION = 'أن تكون الجمعية نموذجًا في العمل الاجتماعي المؤسسي، تقوم حوكمتها على قرارات موثّقة وشفافة تضاعف أثرها في المجتمع.';
   const DEFAULT_MISSION = 'إدارة اجتماعات المجلس واللجان وقراراتها بكفاءة وشفافية عبر منصة رقمية موحدة وآمنة، تدعم العمل الخيري وتخدم المستفيدين.';
-  const GOAL_ICONS = ['◎', '▤', '⚖', '♙', '✦', '◫'];
+  // أيقونات SVG موحدة (خطية) بدل الرموز النصية؛ ثوابت داخلية موثوقة فقط
+  const SVG = p => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${p}</svg>`;
+  const IC = {
+    calendar: SVG('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>'),
+    archive: SVG('<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v10h14V9M10 13h4"/>'),
+    scale: SVG('<path d="M12 3v18M6 21h12M4 7h16"/><path d="M7 7l-3 6a3 3 0 0 0 6 0zM17 7l-3 6a3 3 0 0 0 6 0z"/>'),
+    users: SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8 0 5 2.2 5 5"/>'),
+    shield: SVG('<path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>'),
+    chart: SVG('<path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>'),
+    pen: SVG('<path d="M4 20h16"/><path d="M6 15l9-9 3 3-9 9H6z"/>'),
+    mail: SVG('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/>'),
+    lock: SVG('<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+    vote: SVG('<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M8 9V5l4 3 4-3v4M8 14h8"/>'),
+    flag: SVG('<path d="M5 21V4M5 5h11l-2 4 2 4H5"/>'),
+    book: SVG('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 8h6"/>')
+  };
+  const GOAL_ICONS = [IC.calendar, IC.archive, IC.scale, IC.users, IC.shield, IC.chart];
   const DEFAULT_SLIDES = [
-    {title: 'منصة الاجتماعات والحوكمة الرقمية', body: 'بوابة واحدة لإدارة الاجتماعات والقرارات والمحاضر لمجالس الجمعية ولجانها.', cta: 'تسجيل الدخول', link: ''},
-    {title: 'اجتماعات أكثر كفاءة وقرارات أوضح', body: 'من الدعوة وجدول الأعمال إلى التصويت والتوقيع ومتابعة التنفيذ.', cta: 'تعرّف على أهدافنا', link: '#lp-goals'},
-    {title: 'الأمان والتوثيق أولًا', body: 'صلاحيات محكمة، وتصويت سري، وتوقيع موثّق بسجل تدقيق كامل.', cta: 'الرؤية والرسالة', link: '#lp-vision'}
+    // واجهة ثابتة بلا سلايدر: عنوان وجملة ورابط للتعريف بالمنصة (زر الدخول في الترويسة وفي نهاية الصفحة).
+    // تعود الشرائح المتحركة تلقائيًا إن أضاف المدير أكثر من إعلان من «بيانات المنصة».
+    {title: 'منصة الاجتماعات والحوكمة الرقمية', body: 'بوابة واحدة لإدارة اجتماعات مجلس الإدارة واللجان والجمعية العمومية: من الدعوة وجدول الأعمال إلى التصويت والتوقيع ومتابعة تنفيذ القرارات.', cta: 'اعرف كيف تعمل المنصة', link: '#lp-how'}
   ];
 
   const CSS = `
@@ -98,6 +114,17 @@ html[data-auth=out] body{background:#f9f4ee}
 .lp-vm .lp-card.vision h3,.lp-vm .lp-card.vision .big{color:#fff}
 .lp-vm .lp-card.vision .lp-ico{background:rgba(255,255,255,.14);color:#ffc58a}
 @media(max-width:700px){.lp-vm{grid-template-columns:1fr}}
+.lp-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.lp-steps .lp-card{position:relative}
+.lp-step-no{position:absolute;inset-block-start:16px;inset-inline-end:18px;width:28px;height:28px;border-radius:50%;background:var(--lp-strong);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
+.lp-who .lp-card h3,#lp-who .lp-card h3,#lp-trust .lp-card h3{font-size:16px}
+#lp-who .lp-card p,#lp-trust .lp-card p{color:var(--lp-ink)}
+.lp-note{margin:16px 0 0;background:#fff7e6;border:1px solid #f0d9a8;color:#6b4a07;border-radius:14px;padding:12px 16px}
+.lp-ico svg{display:block}
+.lp-vmini{display:grid;gap:6px;color:var(--lp-muted);font-size:15px}
+.lp-vmini p{margin:0}
+.lp-vmini strong{color:var(--lp-strong)}
+.lp-foot-links a{text-decoration:underline}
 .lp-cta{margin:clamp(40px,7vw,80px) clamp(16px,4vw,40px) 0;padding:clamp(24px,4vw,44px);border-radius:24px;background:#fff;border:1px solid var(--lp-line);display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;max-width:1240px;margin-inline:auto}
 .lp-cta h2{margin:0 0 4px;font-size:clamp(20px,2.4vw,28px)}
 .lp-cta p{margin:0;color:var(--lp-muted)}
@@ -254,18 +281,33 @@ html[data-auth=in] .lp-gate-close{display:none}
     el.innerHTML = `
       <a class="lp-skip" href="#lp-main">تخطي إلى المحتوى</a>
       <header class="lp-header">
-        <a class="lp-brand" href="#top"><img src="assets/logo.svg" alt="" data-brand-logo /><span><h1 class="lp-h1" data-brand="platform_name">منصة الاجتماعات</h1><small data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</small></span></a>
-        <nav class="lp-nav" aria-label="أقسام الصفحة"><a href="#lp-goals">الأهداف</a><a href="#lp-vision">الرؤية</a><a href="#lp-mission">الرسالة</a><a href="#lp-contact">تواصل معنا</a></nav>
+        <a class="lp-brand" href="#top"><img src="assets/logo.svg" alt="شعار جمعية الإحسان للخدمات الاجتماعية" data-brand-logo /><span><h1 class="lp-h1" data-brand="platform_name">منصة الاجتماعات</h1><small data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</small></span></a>
+        <nav class="lp-nav" aria-label="أقسام الصفحة"><a href="#lp-how">كيف تعمل المنصة</a><a href="#lp-who">لمن المنصة؟</a><a href="#lp-trust">الثقة والأمان</a><a href="#lp-contact" id="lpNavContact" hidden>تواصل معنا</a></nav>
         ${inApp ? '<button class="lp-login-btn" id="lpLoginBtn" type="button">الدخول إلى المنصة</button>' : '<button class="lp-login-btn" id="lpLoginBtn" type="button" aria-controls="authGate" aria-expanded="false">تسجيل الدخول</button>'}
       </header>
       <main id="lp-main">
         <section class="lp-hero" id="top" aria-roledescription="carousel" aria-label="الإعلانات والأخبار"></section>
-        <section class="lp-sec reveal" id="lp-goals" aria-labelledby="lp-goals-h"><h2 id="lp-goals-h">أهدافنا</h2><p class="lp-lead">ما نعمل على تحقيقه عبر هذه المنصة.</p><div class="lp-goals" id="lpGoals"></div></section>
-        <section class="lp-sec reveal" id="lp-vision" aria-label="الرؤية والرسالة"><div class="lp-vm">
-          <article class="lp-card vision"><div class="lp-ico" aria-hidden="true">◉</div><h3>رؤيتنا</h3><p class="big" id="lpVision"></p></article>
-          <article class="lp-card" id="lp-mission"><div class="lp-ico" aria-hidden="true">➜</div><h3>رسالتنا</h3><p class="big" id="lpMission"></p></article>
+        <section class="lp-sec reveal" id="lp-how" aria-labelledby="lp-how-h"><h2 id="lp-how-h">كيف تعمل المنصة</h2><p class="lp-lead">أربع خطوات من الدعوة إلى متابعة تنفيذ القرار.</p><ol class="lp-steps">
+          <li class="lp-card"><span class="lp-step-no" aria-hidden="true">1</span><div class="lp-ico" aria-hidden="true">${IC.mail}</div><h3>الدعوة وجدول الأعمال</h3><p>يجدول أمين السر الاجتماع ويُعدّ جدول أعماله وملفاته، وتصل الدعوة إلى أعضاء الجهة.</p></li>
+          <li class="lp-card"><span class="lp-step-no" aria-hidden="true">2</span><div class="lp-ico" aria-hidden="true">${IC.users}</div><h3>الاجتماع والحضور</h3><p>يُعقد الاجتماع حضوريًا أو عبر رابط افتراضي، ويُسجَّل الحضور ويُتحقق من النصاب.</p></li>
+          <li class="lp-card"><span class="lp-step-no" aria-hidden="true">3</span><div class="lp-ico" aria-hidden="true">${IC.pen}</div><h3>التصويت والتوقيع الإلكتروني</h3><p>تصويت علني أو سري على البنود، ثم يُعتمد المحضر ويُوقَّع إلكترونيًا.</p></li>
+          <li class="lp-card"><span class="lp-step-no" aria-hidden="true">4</span><div class="lp-ico" aria-hidden="true">${IC.flag}</div><h3>متابعة تنفيذ القرارات</h3><p>تتحول القرارات إلى مهام بمسؤول وموعد، وتُتابَع حتى الإقفال مع تنبيهات التأخر.</p></li>
+        </ol></section>
+        <section class="lp-sec reveal" id="lp-who" aria-labelledby="lp-who-h"><h2 id="lp-who-h">لمن المنصة؟</h2><div class="lp-goals">
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.users}</div><h3>الجمعية العمومية</h3><p>الاطلاع على اجتماعاتها وقراراتها والمشاركة في التصويت.</p></article>
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.scale}</div><h3>مجلس الإدارة</h3><p>اعتماد القرارات والمحاضر ومتابعة تنفيذها.</p></article>
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.book}</div><h3>اللجان</h3><p>إدارة اجتماعات اللجنة وتوصياتها ومهامها.</p></article>
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.pen}</div><h3>أمين السر</h3><p>جدولة الاجتماعات وإدارة الأعضاء وإعداد المحاضر والقرارات.</p></article>
+        </div><p class="lp-note" role="note"><strong>الدخول للأعضاء المعتمدين فقط.</strong> إن لم يكن لديك حساب فتواصل مع أمين سر المجلس.</p></section>
+        <section class="lp-sec reveal" id="lp-trust" aria-labelledby="lp-trust-h"><h2 id="lp-trust-h">الثقة والأمان</h2><div class="lp-goals">
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.lock}</div><h3>دخول بحساب شخصي</h3><p>بالبريد الإلكتروني وكلمة المرور، أو برمز تحقق يصل إلى بريدك.</p></article>
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.shield}</div><h3>صلاحيات حسب الدور</h3><p>كل مستخدم يرى ويفعل ما يخصه فقط، وتُفرض الصلاحيات في الخادم لا في الواجهة وحدها.</p></article>
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.vote}</div><h3>تصويت سري وتوقيع إلكتروني</h3><p>التصويت السري لا يربط اختيارك باسمك، وتُوقَّع المحاضر إلكترونيًا.</p></article>
+          <article class="lp-card"><div class="lp-ico" aria-hidden="true">${IC.archive}</div><h3>أرشفة وسجل تدقيق</h3><p>المحاضر والقرارات محفوظة ومؤرشفة، وتُسجَّل عمليات القرارات في سجل تدقيق.</p></article>
         </div></section>
-        <section class="lp-cta reveal" aria-label="الدخول إلى المنصة"><div><h2>${inApp ? 'مساحة عملك بانتظارك' : 'هل أنت عضو في المجلس أو إحدى اللجان؟'}</h2><p>${inApp ? 'ارجع إلى المنصة لمتابعة اجتماعاتك ومحاضرك ومهامك.' : 'سجّل دخولك لتصل إلى اجتماعاتك ومحاضرك ومهامك.'}</p></div><button class="lp-btn solid" id="lpCta" type="button">${inApp ? 'الدخول إلى المنصة' : 'تسجيل الدخول'}</button></section>
+        <section class="lp-sec reveal" id="lp-goals" aria-labelledby="lp-goals-h"><h2 id="lp-goals-h">أهدافنا</h2><p class="lp-lead">ما نعمل على تحقيقه عبر هذه المنصة.</p><div class="lp-goals" id="lpGoals"></div></section>
+        <section class="lp-sec lp-vmini reveal" id="lp-vision" aria-label="رؤية الجمعية ورسالتها"><p><strong>رؤية الجمعية:</strong> <span id="lpVision"></span></p><p id="lp-mission"><strong>رسالة الجمعية:</strong> <span id="lpMission"></span></p></section>
+        <section class="lp-cta reveal" aria-label="الدخول إلى المنصة"><div><h2>${inApp ? 'مساحة عملك بانتظارك' : 'هل أنت عضو في المجلس أو إحدى اللجان؟'}</h2><p>ادخل لمتابعة اجتماعاتك ومحاضرك ومهامك.</p></div><button class="lp-btn solid" id="lpCta" type="button">${inApp ? 'الدخول إلى المنصة' : 'تسجيل الدخول'}</button></section>
       </main>
       <footer class="lp-foot" id="lp-contact"><div class="lp-foot-in" id="lpFoot"></div><small>© <span id="lpYear"></span> <span data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</span></small><small class="lp-credit">تصميم الموقع من إعداد محمد ناجي</small></footer>`;
     document.body.prepend(el);
@@ -278,7 +320,7 @@ html[data-auth=in] .lp-gate-close{display:none}
     $('#lpVision').textContent = s.vision || DEFAULT_VISION;
     $('#lpMission').textContent = s.mission || DEFAULT_MISSION;
     $('#lpGoals').replaceChildren(...goalsFrom(s).map((g, i) => {
-      const c = mk('article', 'lp-card'); const ic = mk('div', 'lp-ico', GOAL_ICONS[i % GOAL_ICONS.length]); ic.setAttribute('aria-hidden', 'true');
+      const c = mk('article', 'lp-card'); const ic = mk('div', 'lp-ico'); ic.innerHTML = GOAL_ICONS[i % GOAL_ICONS.length]; ic.setAttribute('aria-hidden', 'true'); /* ثوابت SVG داخلية */
       c.append(ic, mk('p', '', g)); return c;
     }));
     const f = $('#lpFoot'), parts = [];
@@ -306,6 +348,18 @@ html[data-auth=in] .lp-gate-close{display:none}
       });
       c.append(ul); parts.push(c);
     }
+    // روابط المعلومات في التذييل: الجهة المالكة دائمًا، والباقي يظهر عند ضبطه من «بيانات المنصة»
+    {
+      const info = mk('div', 'lp-foot-links'); info.append(mk('h3', '', 'معلومات'));
+      const ul = mk('ul');
+      const liOwner = mk('li'); liOwner.append(mk('span', 'lp-lbl', 'الجهة المالكة: '), document.createTextNode(s.org_name || 'جمعية الإحسان للخدمات الاجتماعية')); ul.append(liOwner);
+      const addLink = (text, href, ext) => { const li = mk('li'), a = mk('a', '', text); a.href = href; if (ext) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } li.append(a); ul.append(li); };
+      if (safeHttps(s.privacy_url)) addLink('سياسة الخصوصية', safeHttps(s.privacy_url), true);
+      if (safeHttps(s.terms_url)) addLink('شروط الاستخدام', safeHttps(s.terms_url), true);
+      if (s.support_email && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(s.support_email)) addLink('الدعم الفني: ' + s.support_email, 'mailto:' + s.support_email);
+      info.append(ul); parts.push(info);
+    }
+    const navContact = document.getElementById('lpNavContact'); if (navContact) navContact.hidden = !contact.length;
     const social = [['social_x', 'X'], ['social_linkedin', 'LinkedIn'], ['social_instagram', 'Instagram'], ['social_youtube', 'YouTube']].filter(([k]) => safeHttps(s[k]));
     if (social.length) {
       const c = mk('div'); c.append(mk('h3', '', 'تابعنا')); const ul = mk('ul');
