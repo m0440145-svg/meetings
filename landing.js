@@ -348,16 +348,15 @@ html[data-auth=in] .lp-gate-close{display:none}
       });
       c.append(ul); parts.push(c);
     }
-    // روابط المعلومات في التذييل: الجهة المالكة دائمًا، والباقي يظهر عند ضبطه من «بيانات المنصة»
+    // روابط المعلومات في التذييل: تظهر عند ضبطها من «بيانات المنصة» (سياسة الخصوصية، شروط الاستخدام، الدعم الفني)
     {
       const info = mk('div', 'lp-foot-links'); info.append(mk('h3', '', 'معلومات'));
       const ul = mk('ul');
-      const liOwner = mk('li'); liOwner.append(mk('span', 'lp-lbl', 'الجهة المالكة: '), document.createTextNode(s.org_name || 'جمعية الإحسان للخدمات الاجتماعية')); ul.append(liOwner);
       const addLink = (text, href, ext) => { const li = mk('li'), a = mk('a', '', text); a.href = href; if (ext) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } li.append(a); ul.append(li); };
       if (safeHttps(s.privacy_url)) addLink('سياسة الخصوصية', safeHttps(s.privacy_url), true);
       if (safeHttps(s.terms_url)) addLink('شروط الاستخدام', safeHttps(s.terms_url), true);
       if (s.support_email && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(s.support_email)) addLink('الدعم الفني: ' + s.support_email, 'mailto:' + s.support_email);
-      info.append(ul); parts.push(info);
+      if (ul.children.length) { info.append(ul); parts.push(info); } // العمود يظهر فقط عند وجود روابط مضبوطة
     }
     const navContact = document.getElementById('lpNavContact'); if (navContact) navContact.hidden = !contact.length;
     const social = [['social_x', 'X'], ['social_linkedin', 'LinkedIn'], ['social_instagram', 'Instagram'], ['social_youtube', 'YouTube']].filter(([k]) => safeHttps(s[k]));
