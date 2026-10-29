@@ -27,7 +27,40 @@
       const cm = await c.from('committees').select('name').eq('id', m.data.committee_id).maybeSingle();
       m.data.committees = cm.data || null;
     }
-    return {meeting: m.data, agenda: ag.data || [], files: at.data || []};
+    // التسجيل ميزة اختيارية (ترحيل 013): إن لم يوجد الجدول يُخفى القسم ولا يتأثر شيء
+    let rec = null, recOk = false;
+    try {
+      const r = await c.from('meeting_recordings').select('*').eq('meeting_id', id).maybeSingle();
+      if (!r.error) { recOk = true; rec = r.data || null; }
+    } catch { /* الميزة غير مفعّلة */ }
+    return {meeting: m.data, agenda: ag.data || [], files: at.data || [], rec, recOk};
+  }
+
+  function retention(rec) {
+    if (!rec || !rec.retain_until) return '';
+    const days = Math.ceil((new Date(rec.retain_until + 'T00:00:00') - new Date()) / 86400000);
+    if (days < 0) return `<span class="status-pill danger">انتهت مدة الاحتفاظ — يُنصح بحذف التسجيل</span>`;
+    if (days <= 30) return `<span class="status-pill warn">ينتهي الاحتفاظ بعد ${days} يومًا</span>`;
+    return `<span class="meta">الاحتفاظ حتى ${esc(rec.retain_until)}</span>`;
+  }
+
+  async function editRecording(m, rec) {
+    const c = await db();
+    return DM.form({
+      title: rec ? 'تعديل بيانات التسجيل' : 'إضافة رابط تسجيل الاجتماع', submit: 'حفظ',
+      fields: [
+        {name: 'url', label: 'رابط التسجيل (https)', type: 'url', required: true, value: rec?.url || '', help: 'سجّل الاجتماع في Teams أو Zoom أو Meet وألصق رابط التسجيل هنا'},
+        {name: 'retain', label: 'الاحتفاظ بالتسجيل حتى', type: 'date', value: rec?.retain_until || '', help: 'بعد هذا التاريخ يُنصح بحذف التسجيل'},
+        {name: 'note', label: 'ملاحظة', maxlength: 500, value: rec?.note || '', help: 'مثال: تم إعلام الحضور بالتسجيل وأُثبت ذلك في المحضر'}
+      ],
+      onSubmit: async v => {
+        if (!safeUrl(v.url)) throw new Error('رابط التسجيل يجب أن يبدأ بـ https://');
+        const row = {meeting_id: m.id, url: safeUrl(v.url), retain_until: v.retain || null, note: v.note || null, updated_at: new Date().toISOString()};
+        const {data, error} = await c.from('meeting_recordings').upsert(row, {onConflict: 'meeting_id'}).select('meeting_id');
+        if (error) err(error, 'تعذر حفظ التسجيل');
+        if (!data || !data.length) throw new Error('لم يُحفظ التسجيل: لا تملك صلاحية');
+      }
+    });
   }
 
   async function editMeeting(m) {
@@ -140,6 +173,8 @@
           ${agenda.length ? `<ol class="mm-list">${agenda.map(a => `<li><span>${esc(a.title)} <small class="meta">${a.duration_minutes || ''} دقيقة</small></span><button type="button" class="dm-btn ghost sm" data-delag="${esc(a.id)}">حذف</button></li>`).join('')}</ol>` : '<p class="meta">لا توجد بنود.</p>'}</section>
         <section class="mm-sec"><div class="mm-row"><h4>المرفقات (${files.length})</h4><button type="button" class="dm-btn ghost sm" data-addfile>＋ مرفق</button></div>
           ${files.length ? `<ul class="mm-list">${files.map(f => `<li><span>${esc(f.file_name)} <small class="meta">${f.size_bytes ? Math.round(f.size_bytes / 1024) + ' ك.ب' : ''}</small></span><span class="mm-fa"><button type="button" class="dm-btn ghost sm" data-openf="${esc(f.id)}">فتح</button><button type="button" class="dm-btn ghost sm" data-delf="${esc(f.id)}">حذف</button></span></li>`).join('')}</ul>` : '<p class="meta">لا توجد مرفقات.</p>'}</section>
+        ${state.recOk ? `<section class="mm-sec"><div class="mm-row"><h4>تسجيل الاجتماع</h4>${state.rec ? '' : '<button type="button" class="dm-btn ghost sm" data-addrec>＋ رابط التسجيل</button>'}</div>
+          ${state.rec ? `<ul class="mm-list"><li><span>${safeUrl(state.rec.url) ? `<a href="${esc(safeUrl(state.rec.url))}" target="_blank" rel="noopener noreferrer">فتح التسجيل</a>` : 'رابط غير صالح'} ${retention(state.rec)}${state.rec.note ? `<br><small class="meta">${esc(state.rec.note)}</small>` : ''}</span><span class="mm-fa"><button type="button" class="dm-btn ghost sm" data-editrec>تعديل</button><button type="button" class="dm-btn ghost sm" data-delrec>حذف</button></span></li></ul>` : '<p class="meta">لا يوجد تسجيل. إن سُجّل الاجتماع فأعلم الحضور وأثبت ذلك في المحضر.</p>'}</section>` : ''}
         <p class="dm-err" role="alert" data-err></p>
       </div>`;
     }
@@ -154,6 +189,14 @@
       if (t.hasAttribute('data-del')) return run(async () => { if (await deleteMeeting(m, files)) { toast('تم حذف الاجتماع'); close(); } });
       if (t.hasAttribute('data-addag')) return run(async () => { if (await addAgenda(m, agenda.length)) await refresh(); });
       if (t.dataset.delag) return run(async () => { const c = await db(); const {data, error} = await c.from('agenda_items').delete().eq('id', t.dataset.delag).select('id'); if (error) err(error, 'تعذر حذف البند'); if (!data?.length) throw new Error('لا تملك صلاحية حذف البند'); await refresh(); });
+      if (t.hasAttribute('data-addrec') || t.hasAttribute('data-editrec')) return run(async () => { if (await editRecording(m, state.rec)) await refresh(); });
+      if (t.hasAttribute('data-delrec')) return run(async () => {
+        const ok = await DM.confirm({title: 'حذف رابط التسجيل', danger: true, confirmLabel: 'حذف', message: 'سيُحذف الرابط من المنصة فقط، أما ملف التسجيل نفسه فيبقى في أداة الاجتماع الخارجية.'});
+        if (!ok.ok) return;
+        const c = await db(); const {data, error} = await c.from('meeting_recordings').delete().eq('meeting_id', m.id).select('meeting_id');
+        if (error) err(error, 'تعذر حذف التسجيل'); if (!data?.length) throw new Error('لم يُحذف: لا تملك صلاحية');
+        await refresh();
+      });
       if (t.hasAttribute('data-addfile')) return run(async () => { if (await addFiles(m)) await refresh(); });
       if (t.dataset.delf) return run(async () => { await removeFile(files.find(f => f.id === t.dataset.delf)); await refresh(); });
       if (t.dataset.openf) return run(async () => {
