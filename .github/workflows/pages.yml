@@ -22,7 +22,7 @@ jobs:
       - name: Prepare website
         run: |
           mkdir -p public
-          cp index.html styles.css theme.css theme.js a11y.js script.js home.js nav-fix.js supabase-config.js supabase-app.js advanced-supabase.js production-features.js platform-settings.js nav-groups.js member-space.js insights.js governance.js development.js archive-reports.js reminders.js scheduler.js landing.js banners-admin.js decisions.js xlsx-lite.js dm-core.js dm-views.js dm-detail.js dm-admin.js meeting-manage.js members-manage.js bodies-manage.js surveys.js 404.html .nojekyll public/
+          cp index.html styles.css theme.css theme.js a11y.js script.js home.js nav-fix.js supabase-config.js supabase-app.js advanced-supabase.js production-features.js platform-settings.js nav-groups.js member-space.js insights.js governance.js development.js archive-reports.js reminders.js scheduler.js landing.js banners-admin.js decisions.js xlsx-lite.js dm-core.js dm-views.js dm-detail.js dm-admin.js meeting-manage.js members-manage.js bodies-manage.js surveys.js demo-labels.js 404.html .nojekyll public/
           cp -R assets public/assets
           # رقم إصدار للملفات يمنع بقاء نسخة قديمة في كاش المتصفح بعد كل نشر
           sed -i "s/__BUILD__/${GITHUB_SHA::8}/g" public/index.html public/home.js
