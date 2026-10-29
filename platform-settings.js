@@ -5,13 +5,13 @@
   const toast = m => window.showToast ? window.showToast(m) : alert(m);
   const CACHE_KEY = 'ehsan_platform_settings_v1';
   const IMAGE_KEYS = ['logo_url', 'logo2_url', 'favicon_url'];
-  const HTTPS_KEYS = ['contact_website', 'social_x', 'social_linkedin', 'social_instagram', 'social_youtube'];
+  const HTTPS_KEYS = ['contact_website', 'privacy_url', 'terms_url', 'social_x', 'social_linkedin', 'social_instagram', 'social_youtube'];
   const SOCIAL = [['social_x', 'X'], ['social_linkedin', 'LinkedIn'], ['social_instagram', 'Instagram'], ['social_youtube', 'YouTube']];
   const TEXT_KEYS = ['platform_name', 'org_name', 'home_eyebrow', 'home_title', 'home_text', 'about', 'vision', 'mission', 'goals',
-    'contact_email', 'contact_phone', 'contact_address', 'contact_whatsapp', 'contact_hours', 'footer_text', 'license_no', 'chair_name', 'chair_title', 'secretary_name', 'secretary_title'];
+    'contact_email', 'contact_phone', 'contact_address', 'contact_whatsapp', 'contact_hours', 'support_email', 'footer_text', 'license_no', 'chair_name', 'chair_title', 'secretary_name', 'secretary_title'];
   const ALL_KEYS = [...TEXT_KEYS, ...HTTPS_KEYS, ...IMAGE_KEYS, 'primary_color', 'accent_color'];
   const MAX = {platform_name: 80, org_name: 120, home_eyebrow: 120, home_title: 160, home_text: 600, about: 2000, vision: 800, mission: 800, goals: 2000,
-    contact_email: 120, contact_phone: 40, contact_address: 200, contact_whatsapp: 20, contact_hours: 120, contact_website: 200, footer_text: 160, logo_url: 500, logo2_url: 500, favicon_url: 500,
+    contact_email: 120, contact_phone: 40, contact_address: 200, contact_whatsapp: 20, contact_hours: 120, contact_website: 200, privacy_url: 300, terms_url: 300, support_email: 120, footer_text: 160, logo_url: 500, logo2_url: 500, favicon_url: 500,
     license_no: 60, chair_name: 100, chair_title: 100, secretary_name: 100, secretary_title: 100, social_x: 200, social_linkedin: 200, social_instagram: 200, social_youtube: 200};
   const MAX_LOGO_BYTES = 2 * 1024 * 1024;
   const LOGO_TYPES = {'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp'};
