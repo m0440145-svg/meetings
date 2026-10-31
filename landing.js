@@ -34,7 +34,12 @@
     lock: SVG('<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
     vote: SVG('<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M8 9V5l4 3 4-3v4M8 14h8"/>'),
     flag: SVG('<path d="M5 21V4M5 5h11l-2 4 2 4H5"/>'),
-    book: SVG('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 8h6"/>')
+    book: SVG('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 8h6"/>'),
+    phone: SVG('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>'),
+    chat: SVG('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
+    globe: SVG('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
+    pin: SVG('<path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
+    clock: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')
   };
   const GOAL_ICONS = [IC.calendar, IC.archive, IC.scale, IC.users, IC.shield, IC.chart];
   const DEFAULT_SLIDES = [
@@ -125,6 +130,11 @@ html[data-auth=out] body{background:#f9f4ee}
 .lp-vmini p{margin:0}
 .lp-vmini strong{color:var(--lp-strong)}
 .lp-foot-links a{text-decoration:underline}
+.lp-contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.lp-contact-card{display:flex;gap:14px;align-items:flex-start}
+.lp-contact-card .lp-ico{margin:0;flex:none}
+.lp-contact-card h3{margin:0 0 2px;font-size:15px}
+.lp-contact-card a,.lp-contact-card p{font-weight:700;overflow-wrap:anywhere}
 .lp-cta{margin:clamp(40px,7vw,80px) clamp(16px,4vw,40px) 0;padding:clamp(24px,4vw,44px);border-radius:24px;background:#fff;border:1px solid var(--lp-line);display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;max-width:1240px;margin-inline:auto}
 .lp-cta h2{margin:0 0 4px;font-size:clamp(20px,2.4vw,28px)}
 .lp-cta p{margin:0;color:var(--lp-muted)}
@@ -282,7 +292,7 @@ html[data-auth=in] .lp-gate-close{display:none}
       <a class="lp-skip" href="#lp-main">تخطي إلى المحتوى</a>
       <header class="lp-header">
         <a class="lp-brand" href="#top"><img src="assets/logo.svg" alt="شعار جمعية الإحسان للخدمات الاجتماعية" data-brand-logo /><span><h1 class="lp-h1" data-brand="platform_name">منصة الاجتماعات</h1><small data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</small></span></a>
-        <nav class="lp-nav" aria-label="أقسام الصفحة"><a href="#lp-how">كيف تعمل المنصة</a><a href="#lp-who">لمن المنصة؟</a><a href="#lp-trust">الثقة والأمان</a><a href="#lp-contact" id="lpNavContact" hidden>تواصل معنا</a></nav>
+        <nav class="lp-nav" aria-label="أقسام الصفحة"><a href="#lp-how">كيف تعمل المنصة</a><a href="#lp-who">لمن المنصة؟</a><a href="#lp-trust">الثقة والأمان</a><a href="#lp-contact">اتصل بنا</a></nav>
         ${inApp ? '<button class="lp-login-btn" id="lpLoginBtn" type="button">الدخول إلى المنصة</button>' : '<button class="lp-login-btn" id="lpLoginBtn" type="button" aria-controls="authGate" aria-expanded="false">تسجيل الدخول</button>'}
       </header>
       <main id="lp-main">
@@ -308,8 +318,9 @@ html[data-auth=in] .lp-gate-close{display:none}
         <section class="lp-sec reveal" id="lp-goals" aria-labelledby="lp-goals-h"><h2 id="lp-goals-h">أهدافنا</h2><p class="lp-lead">ما نعمل على تحقيقه عبر هذه المنصة.</p><div class="lp-goals" id="lpGoals"></div></section>
         <section class="lp-sec lp-vmini reveal" id="lp-vision" aria-label="رؤية الجمعية ورسالتها"><p><strong>رؤية الجمعية:</strong> <span id="lpVision"></span></p><p id="lp-mission"><strong>رسالة الجمعية:</strong> <span id="lpMission"></span></p></section>
         <section class="lp-cta reveal" aria-label="الدخول إلى المنصة"><div><h2>${inApp ? 'مساحة عملك بانتظارك' : 'هل أنت عضو في المجلس أو إحدى اللجان؟'}</h2><p>ادخل لمتابعة اجتماعاتك ومحاضرك ومهامك.</p></div><button class="lp-btn solid" id="lpCta" type="button">${inApp ? 'الدخول إلى المنصة' : 'تسجيل الدخول'}</button></section>
+        <section class="lp-sec reveal" id="lp-contact" aria-labelledby="lp-contact-h"><h2 id="lp-contact-h">اتصل بنا</h2><div id="lpContact"></div></section>
       </main>
-      <footer class="lp-foot" id="lp-contact"><div class="lp-foot-in" id="lpFoot"></div><small>© <span id="lpYear"></span> <span data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</span></small><small class="lp-credit">تصميم الموقع من إعداد محمد ناجي</small></footer>`;
+      <footer class="lp-foot" id="lp-footer"><div class="lp-foot-in" id="lpFoot"></div><small>© <span id="lpYear"></span> <span data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</span></small><small class="lp-credit">تصميم الموقع من إعداد محمد ناجي</small></footer>`;
     document.body.prepend(el);
     el.querySelector('#lpYear').textContent = new Date().getFullYear();
     paintContent(s);
@@ -338,15 +349,26 @@ html[data-auth=in] .lp-gate-close{display:none}
     if (s.contact_address) add('العنوان', s.contact_address);
     if (s.contact_hours) add('ساعات العمل', s.contact_hours);
     if (s.license_no) add('رقم الترخيص', s.license_no);
-    if (contact.length) {
-      const c = mk('div'); c.append(mk('h3', '', 'تواصل معنا'));
-      const ul = mk('ul');
-      contact.forEach(({label, text, href, ext}) => {
-        const li = mk('li'); li.append(mk('span', 'lp-lbl', label + ': '));
-        if (href) { const a = mk('a', '', text); a.href = href; if (ext) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } if (label === 'الجوال' || label === 'واتساب') a.dir = 'ltr'; li.append(a); } else li.append(document.createTextNode(text));
-        ul.append(li);
-      });
-      c.append(ul); parts.push(c);
+    // قسم «اتصل بنا» أسفل الصفحة: يُعبَّأ يدويًا من «بيانات المنصة»؛ وما لم يُدخَل لا يظهر
+    {
+      const box = document.getElementById('lpContact');
+      if (box) {
+        const ICON = {'الجوال': IC.phone, 'واتساب': IC.chat, 'البريد': IC.mail, 'الموقع': IC.globe, 'العنوان': IC.pin, 'ساعات العمل': IC.clock, 'رقم الترخيص': IC.archive};
+        if (contact.length) {
+          const grid = mk('div', 'lp-contact-grid');
+          contact.forEach(({label, text, href, ext}) => {
+            const card = mk('article', 'lp-card lp-contact-card');
+            const ic = mk('div', 'lp-ico'); ic.innerHTML = ICON[label] || IC.mail; ic.setAttribute('aria-hidden', 'true');
+            const body = mk('div'); body.append(mk('h3', '', label));
+            if (href) { const a = mk('a', '', text); a.href = href; if (ext) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } if (label === 'الجوال' || label === 'واتساب') a.dir = 'ltr'; body.append(a); }
+            else body.append(mk('p', '', text));
+            card.append(ic, body); grid.append(card);
+          });
+          box.replaceChildren(grid);
+        } else {
+          box.replaceChildren(mk('p', 'lp-lead', 'ستُضاف وسائل التواصل قريبًا.' + (inApp ? ' يمكن للمدير إدخالها من «إدارة المنصة ← بيانات المنصة».' : '')));
+        }
+      }
     }
     // روابط المعلومات في التذييل: تظهر عند ضبطها من «بيانات المنصة» (سياسة الخصوصية، شروط الاستخدام، الدعم الفني)
     {
@@ -358,7 +380,7 @@ html[data-auth=in] .lp-gate-close{display:none}
       if (s.support_email && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(s.support_email)) addLink('الدعم الفني: ' + s.support_email, 'mailto:' + s.support_email);
       if (ul.children.length) { info.append(ul); parts.push(info); } // العمود يظهر فقط عند وجود روابط مضبوطة
     }
-    const navContact = document.getElementById('lpNavContact'); if (navContact) navContact.hidden = !contact.length;
+    
     const social = [['social_x', 'X'], ['social_linkedin', 'LinkedIn'], ['social_instagram', 'Instagram'], ['social_youtube', 'YouTube']].filter(([k]) => safeHttps(s[k]));
     if (social.length) {
       const c = mk('div'); c.append(mk('h3', '', 'تابعنا')); const ul = mk('ul');
