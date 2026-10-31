@@ -55,7 +55,7 @@
     }
     const root = document.documentElement.style;
     ['primary', 'accent'].forEach(k => { const c = hex(s[k + '_color']); if (c) root.setProperty('--' + k, c); else root.removeProperty('--' + k); });
-    if (s.platform_name || s.org_name) document.title = [s.platform_name || 'منصة الاجتماعات', s.org_name || 'جمعية الإحسان'].join(' | ');
+    if (s.platform_name || s.org_name) document.title = [s.platform_name || 'ميثاق', s.org_name || 'جمعية الإحسان'].join(' | ');
   }
 
   function renderAbout() {
