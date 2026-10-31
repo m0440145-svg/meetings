@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="220" viewBox="0 0 600 220" role="img" aria-label="جمعية الإحسان للخدمات الاجتماعية">
+  <!-- شعار مؤقت: الملف الأصلي كان تالفًا (بيانات الصورة مقطوعة). استبدله بالشعار الرسمي. -->
+  <circle cx="510" cy="110" r="62" fill="#cf6028"/>
+  <circle cx="510" cy="110" r="38" fill="none" stroke="#f9f4ee" stroke-width="10"/>
+  <circle cx="510" cy="110" r="12" fill="#f18927"/>
+  <text x="420" y="104" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="54" font-weight="700" fill="#cf6028">جمعية الإحسان</text>
+  <text x="420" y="152" text-anchor="end" font-family="Tahoma, Arial, sans-serif" font-size="28" fill="#7d6f69">للخدمات الاجتماعية</text>
+</svg>
