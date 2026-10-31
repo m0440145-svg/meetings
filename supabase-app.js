@@ -49,7 +49,7 @@
   function loginScreen() {
     if (q('#authGate')) return;
     const gate = document.createElement('div'); gate.id = 'authGate'; gate.innerHTML = `
-      <div class="auth-card"><img src="assets/logo.svg" alt="شعار جمعية الإحسان" data-brand-logo><h2 data-brand="platform_name">منصة الاجتماعات</h2><p>تسجيل الدخول إلى حسابك المؤسسي</p>
+      <div class="auth-card"><img src="assets/logo.svg" alt="شعار جمعية الإحسان" data-brand-logo><h2 data-brand="platform_name">ميثاق</h2><p>تسجيل الدخول إلى حسابك المؤسسي</p>
       <form id="authForm"></form>
       <div class="auth-links"><button class="link-btn" type="button" id="signupToggle">إنشاء حساب جديد</button><button class="link-btn" type="button" id="resetToggle">نسيت كلمة المرور</button><button class="link-btn" type="button" id="loginToggle" hidden>العودة لتسجيل الدخول</button></div><small id="authMsg"></small></div>`;
     document.body.appendChild(gate);

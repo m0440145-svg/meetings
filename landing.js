@@ -38,9 +38,10 @@
   };
   const GOAL_ICONS = [IC.calendar, IC.archive, IC.scale, IC.users, IC.shield, IC.chart];
   const DEFAULT_SLIDES = [
-    // واجهة ثابتة بلا سلايدر: عنوان وجملة ورابط للتعريف بالمنصة (زر الدخول في الترويسة وفي نهاية الصفحة).
-    // تعود الشرائح المتحركة تلقائيًا إن أضاف المدير أكثر من إعلان من «بيانات المنصة».
-    {title: 'منصة الاجتماعات والحوكمة الرقمية', body: 'بوابة واحدة لإدارة اجتماعات مجلس الإدارة واللجان والجمعية العمومية: من الدعوة وجدول الأعمال إلى التصويت والتوقيع ومتابعة تنفيذ القرارات.', cta: 'اعرف كيف تعمل المنصة', link: '#lp-how'}
+    // ثلاث شرائح افتراضية متحركة (مجسّمات ثلاثية الأبعاد على الشاشات الواسعة). تُستبدل بإعلانات «بيانات المنصة» إن أضاف المدير إعلانات.
+    {kicker: 'مرحبًا بكم في ميثاق', title: 'منصة الاجتماعات والحوكمة الرقمية', body: 'بوابة واحدة لإدارة اجتماعات مجلس الإدارة واللجان والجمعية العمومية: من الدعوة وجدول الأعمال إلى التصويت والتوقيع ومتابعة تنفيذ القرارات.', cta: 'اعرف كيف تعمل المنصة', link: '#lp-how'},
+    {kicker: 'من الدعوة إلى المحضر', title: 'اجتماعاتكم كلها في مكان واحد', body: 'جدول أعمال ومرفقات وحضور وتصويت ومحضر موقّع، بلا أوراق متفرقة ولا رسائل ضائعة.', cta: 'لمن المنصة؟', link: '#lp-who'},
+    {kicker: 'قرارات موثّقة', title: 'شفافية في القرار ومتابعة حتى الإنجاز', body: 'تُحفظ القرارات والمحاضر في أرشيف موثوق بصلاحيات واضحة، وتُتابع مهام التنفيذ حتى إغلاقها.', cta: 'الثقة والأمان', link: '#lp-trust'}
   ];
 
   const CSS = `
@@ -281,7 +282,7 @@ html[data-auth=in] .lp-gate-close{display:none}
     el.innerHTML = `
       <a class="lp-skip" href="#lp-main">تخطي إلى المحتوى</a>
       <header class="lp-header">
-        <a class="lp-brand" href="#top"><img src="assets/logo.svg" alt="شعار جمعية الإحسان للخدمات الاجتماعية" data-brand-logo /><span><h1 class="lp-h1" data-brand="platform_name">منصة الاجتماعات</h1><small data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</small></span></a>
+        <a class="lp-brand" href="#top"><img src="assets/logo.svg" alt="شعار جمعية الإحسان للخدمات الاجتماعية" data-brand-logo /><span><h1 class="lp-h1" data-brand="platform_name">ميثاق</h1><small data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</small></span></a>
         <nav class="lp-nav" aria-label="أقسام الصفحة"><a href="#lp-how">كيف تعمل المنصة</a><a href="#lp-who">لمن المنصة؟</a><a href="#lp-trust">الثقة والأمان</a><a href="#lp-contact" id="lpNavContact" hidden>تواصل معنا</a></nav>
         ${inApp ? '<button class="lp-login-btn" id="lpLoginBtn" type="button">الدخول إلى المنصة</button>' : '<button class="lp-login-btn" id="lpLoginBtn" type="button" aria-controls="authGate" aria-expanded="false">تسجيل الدخول</button>'}
       </header>
@@ -432,7 +433,7 @@ html[data-auth=in] .lp-gate-close{display:none}
       a.append(deco);
       a.append(buildStack(i)); // مجسّم أوراق ثلاثي الأبعاد زخرفي (يظهر في وضع 3D فقط)
       const body = mk('div', 'lp-slide-body');
-      body.append(mk('span', 'lp-kicker', i === 0 && !list.length ? 'مرحبًا بكم' : ''), mk('h2', '', sl.title));
+      body.append(mk('span', 'lp-kicker', sl.kicker || ''), mk('h2', '', sl.title));
       if (sl.body) body.append(mk('p', '', sl.body));
       // في وضع المستخدم المسجّل يتحول زر "تسجيل الدخول" الافتراضي إلى "الدخول إلى المنصة"
       const label = (inApp && sl.cta === 'تسجيل الدخول' ? 'الدخول إلى المنصة' : sl.cta) || (sl.link ? 'اعرف المزيد' : '');
