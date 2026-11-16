@@ -1,6 +1,6 @@
 // مساعد أمين السر (المرحلة 1، الترحيل 016). وضع تجريبي: التحليل يتم داخل المتصفح بقواعد نصية بسيطة ولا تغادر المحاضر جهازك.
 // يستخرج القرارات والتوصيات والمهام مع الجملة المصدر والبند والمسؤول والموعد، ويحفظها «مقترحة» لمراجعة أمين السر.
-// لا ينشئ قرارًا أو مهمة رسمية تلقائيًا. ميزة مضافة: إن لم يكن الترحيل مطبّقًا أو لم يكن المستخدم مديرًا لا يظهر شيء.
+// لا ينشئ قرارًا رسميًا تلقائيًا: التحويل مسودة قرار تمر بمسار الاعتماد. ميزة مضافة: إن لم يكن الترحيل مطبّقًا أو لم يكن المستخدم مديرًا لا يظهر شيء.
 (() => {
   'use strict';
   const ui = window.ehsanUI;
@@ -49,7 +49,7 @@
 
   // ───────── الواجهة ─────────
   const KIND_CLASS = {'قرار': 'good', 'توصية': 'warn', 'مهمة': ''};
-  const STATUS_CLASS = {'مقترح': 'warn', 'معتمد': 'good', 'مرفوض': ''};
+  const STATUS_CLASS = {'مقترح': 'warn', 'معتمد': 'good', 'مرفوض': '', 'محوّل': 'good'};
   const CSS = `
 .ai-note{background:#fff7e6;border:1px solid #f0d9a8;color:#6b4a07;border-radius:12px;padding:9px 14px;margin:0 0 14px;font-size:13.5px;line-height:1.7}
 html[data-theme=dark] .ai-note{background:#3a2a12;color:#f1c47a;border-color:#6b4a07}
@@ -72,7 +72,7 @@ html[data-theme=dark] .ai-note{background:#3a2a12;color:#f1c47a;border-color:#6b
       <h3>${esc(x.title)}</h3>
       <blockquote class="ai-quote">${esc(x.quote)}</blockquote>
       ${x.kind === 'مهمة' ? `<div class="ai-meta"><span>المسؤول: <b>${esc(x.owner_hint || '—')}</b></span><span>الموعد: <b>${esc(x.due_hint || '—')}</b></span>${miss.length ? `<span class="ai-miss">⚠ ${esc(miss.join('، '))} — أكمله يدويًا عند الاعتماد</span>` : ''}</div>` : ''}
-      ${x.status === 'مقترح' ? '<div class="ai-acts"><button type="button" class="btn primary" data-ai-ok>اعتماد</button><button type="button" class="btn secondary" data-ai-no>رفض</button></div>' : (x.reviewed_at ? `<div class="ai-meta">روجع ${esc(new Date(x.reviewed_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn'))}${x.review_note ? ' — ' + esc(x.review_note) : ''}</div>` : '')}
+      ${x.status === 'مقترح' ? '<div class="ai-acts"><button type="button" class="btn primary" data-ai-ok>اعتماد</button><button type="button" class="btn secondary" data-ai-conv>اعتماد وتحويل إلى مسودة قرار</button><button type="button" class="btn secondary" data-ai-no>رفض</button></div>' : x.status === 'معتمد' ? '<div class="ai-acts"><button type="button" class="btn primary" data-ai-conv>تحويل إلى مسودة قرار</button></div>' : x.status === 'محوّل' ? `<div class="ai-meta">تحوّل إلى مسودة قرار${x.decision_ref ? ' رقم <b>' + esc(x.decision_ref) + '</b>' : ''} — تجدها في «كل القرارات»</div>` : (x.reviewed_at ? `<div class="ai-meta">روجع ${esc(new Date(x.reviewed_at).toLocaleDateString('ar-SA-u-ca-gregory-nu-latn'))}${x.review_note ? ' — ' + esc(x.review_note) : ''}</div>` : '')}
     </article>`;
   }
 
@@ -82,6 +82,12 @@ html[data-theme=dark] .ai-note{background:#3a2a12;color:#f1c47a;border-color:#6b
     if (!sel.value) { box.innerHTML = '<div class="card">اختر محضرًا لعرض مقترحاته.</div>'; return; }
     const {data, error} = await db.from('ai_suggestions').select('*').eq('minute_id', sel.value).order('created_at').order('kind');
     if (error) { box.innerHTML = '<div class="card">تعذر تحميل المقترحات.</div>'; return; }
+    const ids = (data || []).map(x => x.decision_id).filter(Boolean);
+    if (ids.length) {
+      const {data: ds} = await db.from('decisions').select('id,ref_no').in('id', ids);
+      const ref = new Map((ds || []).map(d => [d.id, d.ref_no]));
+      (data || []).forEach(x => { x.decision_ref = ref.get(x.decision_id) || ''; });
+    }
     box.innerHTML = (data || []).map(paintCard).join('') || '<div class="card">لا مقترحات لهذا المحضر بعد. اضغط «حلّل المحضر».</div>';
   }
 
@@ -108,6 +114,37 @@ html[data-theme=dark] .ai-note{background:#3a2a12;color:#f1c47a;border-color:#6b
     if (error) return toast(error.message || 'تعذر حفظ المقترحات');
     toast(`تم استخراج ${items.length} مقترح. راجعها قبل الاعتماد.`);
     await loadList();
+  }
+
+  // تحويل مقترح إلى مسودة قرار عبر dm_create_decision (صلاحياتها وترقيمها)، ثم تسجيل الصلة. تبقى المسودة بانتظار مراجعة واعتماد الجهة المختصة.
+  const RECORD = {'قرار': 'decision', 'توصية': 'recommendation', 'مهمة': 'assignment'};
+  async function convert(id) {
+    if (!window.DM?.form || !window.DM?.rpc) return toast('وحدة القرارات غير جاهزة بعد، أعد المحاولة بعد لحظات');
+    const {data: x} = await db.from('ai_suggestions').select('*').eq('id', id).single();
+    if (!x || !['مقترح', 'معتمد'].includes(x.status)) return toast('المقترح غير متاح للتحويل');
+    const {data: mn} = await db.from('minutes').select('id,meeting_id,meetings(id,committee_id,title,meeting_no)').eq('id', x.minute_id).single();
+    const mt = mn?.meetings;
+    if (!mt?.committee_id) return toast('اجتماع المحضر غير مرتبط بمجلس أو لجنة؛ اربطه أولًا ثم أعد المحاولة');
+    const notes = [x.agenda_ref && `البند: ${x.agenda_ref}`, x.owner_hint && `المسؤول المقترح: ${x.owner_hint}`, x.due_hint && `الموعد المقترح: ${x.due_hint}`, 'أُنشئت المسودة من مقترح مساعد أمين السر'].filter(Boolean).join('\n');
+    const opt = (v, l) => ({value: v, label: l});
+    await window.DM.form({
+      title: 'تحويل إلى مسودة قرار', wide: true,
+      intro: `من محضر «${mt.title}». تُنشأ مسودة فقط، وتمر بمسار الاعتماد المعتاد قبل أن تصير قرارًا نافذًا. راجع النص وأكمل ما ينقص.`,
+      fields: [
+        {name: 'kind', label: 'نوع الجهة', type: 'select', options: [opt('committee', 'لجنة'), opt('board', 'مجلس إدارة')], value: 'committee'},
+        {name: 'title', label: 'عنوان القرار', required: true, value: x.title.slice(0, 190), maxlength: 200},
+        {name: 'body_text', label: 'نص القرار', type: 'textarea', rows: 5, required: true, value: x.quote},
+        {name: 'notes', label: 'ملاحظات', type: 'textarea', rows: 3, value: notes, help: 'المسؤول والموعد يُعيَّنان رسميًا لاحقًا من شاشة القرار بعد اعتماده.'}
+      ],
+      submit: 'إنشاء المسودة',
+      onSubmit: async v => {
+        const decision = await window.DM.rpc('dm_create_decision', {p: {committee_id: mt.committee_id, body_kind: v.kind, meeting_id: mt.id, minute_id: mn.id, record_type: RECORD[x.kind] || 'decision', title: v.title, body_text: v.body_text, notes: v.notes}});
+        const {error} = await db.rpc('ai_link_decision', {p_id: id, p_decision: decision});
+        if (error) toast('أُنشئت المسودة لكن تعذر تسجيل الربط: ' + (error.message || ''));
+        else toast('أُنشئت مسودة القرار؛ راجعها من «كل القرارات»');
+        await loadList();
+      }
+    });
   }
 
   async function review(id, status) {
@@ -146,7 +183,8 @@ html[data-theme=dark] .ai-note{background:#3a2a12;color:#f1c47a;border-color:#6b
     document.getElementById('aiMinute').addEventListener('change', loadList);
     document.getElementById('aiList').addEventListener('click', e => {
       const card = e.target.closest('.ai-card'); if (!card) return;
-      if (e.target.closest('[data-ai-ok]')) review(card.dataset.id, 'معتمد');
+      if (e.target.closest('[data-ai-conv]')) convert(card.dataset.id);
+      else if (e.target.closest('[data-ai-ok]')) review(card.dataset.id, 'معتمد');
       else if (e.target.closest('[data-ai-no]')) review(card.dataset.id, 'مرفوض');
     });
     onOpen({'ai-assist': async () => { await loadMinutes(); await loadList(); }});
