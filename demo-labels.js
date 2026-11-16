@@ -21,8 +21,9 @@ html[data-theme=dark] .demo-banner{background:#3a2a12;color:#f1c47a;border-color
 
   function apply() {
     for (const view of Object.keys(DEMO)) {
-      if (view === 'live' && document.documentElement.dataset.liveServer) { // رُبطت الشاشة بالخادم (الترحيل 019): لا وسم ولا تنبيه
-        document.querySelectorAll('#sidebar .nav-item[data-view="live"] .demo-tag, #view-live .demo-banner').forEach(e => e.remove());
+      // شاشة رُبطت بالخادم: تُسجّل نفسها في data-server-views (أو liveServer للشاشة المباشرة)، فلا وسم ولا تنبيه
+      if ((view === 'live' && document.documentElement.dataset.liveServer) || (document.documentElement.dataset.serverViews || '').split(' ').includes(view)) {
+        document.querySelectorAll(`#sidebar .nav-item[data-view="${view}"] .demo-tag, #view-${view} .demo-banner`).forEach(e => e.remove());
         continue;
       }
       const btn = document.querySelector(`#sidebar .nav-item[data-view="${view}"]`);
