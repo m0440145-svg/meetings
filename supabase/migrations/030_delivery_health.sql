@@ -50,7 +50,7 @@ begin
   return n;
 end $$;
 
-revoke all on function public.delivery_mask(text) from public, anon;
+revoke all on function public.delivery_mask(text) from public, anon, authenticated; -- داخلية: تستدعيها delivery_health فقط
 revoke all on function public.delivery_health() from public, anon;
 revoke all on function public.delivery_requeue(text) from public, anon;
 grant execute on function public.delivery_health() to authenticated;
