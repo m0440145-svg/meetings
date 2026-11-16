@@ -55,6 +55,8 @@
     const minutes = await DM.sel('minutes', q => q.order('created_at', {ascending: false}).limit(500));
     const meetOpts = v => [opt('', 'بدون ربط باجتماع'), ...DM.refs.meetings.filter(m => !v.committee_id || m.committee_id === v.committee_id).map(m => opt(m.id, `${m.title} — ${m.gregorian_date}`))];
     const minuteOpts = v => [opt('', 'بدون محضر'), ...minutes.filter(m => m.meeting_id === v.meeting_id).map(m => opt(m.id, `محضر (${m.status || '—'}) — ${String(m.created_at).slice(0, 10)}`))];
+    const agendas = await DM.sel('agenda_items', q => q.order('item_order').limit(1000)).catch(() => []);
+    const agendaOpts = v => [opt('', 'بدون ربط ببند'), ...agendas.filter(a => a.meeting_id === v.meeting_id).map(a => opt(a.id, `${a.item_order}. ${a.title}`))];
     await DM.form({title: preset.record_type === 'recommendation' ? 'توصية جديدة' : 'قرار جديد', wide: true,
       intro: 'يُنشأ السجل مسودة برقم مرجعي تلقائي، ثم يُقدَّم للاعتماد. بعد الاعتماد لا يُعدَّل النص إلا بإجراء رسمي موثّق.',
       fields: [
@@ -64,6 +66,7 @@
         {name: 'meeting_id', label: 'الاجتماع', type: 'select', optionsFn: meetOpts, onChange: (v, set) => { const m = DM.refs.meetings.find(x => x.id === v.meeting_id); set('meeting_no', m?.meeting_no || ''); }},
         {name: 'meeting_no', label: 'رقم الاجتماع (مثل 5/2026)', type: 'text', maxlength: 40},
         {name: 'minute_id', label: 'مرجع المحضر', type: 'select', optionsFn: minuteOpts, help: 'لا يُعتمد القرار قبل اعتماد المحضر المرتبط به'},
+        {name: 'agenda_item_id', label: 'بند جدول الأعمال', type: 'select', optionsFn: agendaOpts, help: 'البند الذي صدر عنه القرار (من الاجتماع المختار)'},
         {name: 'x', type: 'button', label: '⇩ استخراج القرارات من المحضر المختار', onClick: v => { if (!v.minute_id) return toast('اختر المحضر أولًا'); DM.extractDialog(v.minute_id); }},
         {name: 'title', label: 'عنوان القرار', type: 'text', required: true, maxlength: 200, minlength: 3},
         {name: 'body_text', label: 'نص القرار الكامل المعتمد', type: 'textarea', rows: 5, required: true, maxlength: 8000, minlength: 3},
@@ -79,6 +82,7 @@
         for (const f of files || []) { if (f.size > MAX_BYTES) throw new Error(`حجم «${f.name}» يتجاوز 15 م.ب`); }
         const id = await DM.rpc('dm_create_decision', {p});
         const failures = [];
+        if (p.agenda_item_id) { try { await DM.rpc('dm_set_agenda_item', {p_id: id, p_agenda: p.agenda_item_id}); } catch (e) { failures.push('ربط البند: ' + e.message); } }
         for (const f of files || []) {
           try { const path = await upload(id, f); await DM.rpc('dm_add_reference', {p_id: id, p_name: f.name, p_path: path, p_mime: f.type || null, p_size: f.size, p_desc: ''}); }
           catch (e) { failures.push(f.name + ': ' + e.message); }
@@ -88,17 +92,26 @@
       }});
   };
 
-  DM.editDraft = D => DM.form({title: 'تعديل المسودة', wide: true, fields: [
+  DM.editDraft = async D => {
+    const ag = D.decision.meeting_id ? await DM.sel('agenda_items', q => q.eq('meeting_id', D.decision.meeting_id).order('item_order')).catch(() => []) : [];
+    return DM.form({title: 'تعديل المسودة', wide: true, fields: [
     {name: 'title', label: 'عنوان القرار', type: 'text', required: true, maxlength: 200, value: D.decision.title},
     {name: 'body_text', label: 'نص القرار', type: 'textarea', rows: 5, required: true, maxlength: 8000, value: D.decision.body_text},
     {name: 'record_type', label: 'نوع السجل', type: 'select', options: Object.entries(DM.RECORD).map(([k, v]) => opt(k, v)), value: D.decision.record_type},
     {name: 'category', label: 'التصنيف', type: 'select', options: Object.entries(DM.CATEGORY).map(([k, v]) => opt(k, v)), value: D.decision.category},
     {name: 'priority', label: 'الأولوية', type: 'select', options: Object.entries(DM.PRIORITY).map(([k, v]) => opt(k, v)), value: D.decision.priority},
     {name: 'meeting_no', label: 'رقم الاجتماع', type: 'text', maxlength: 40, value: D.decision.meeting_no || ''},
+    ...(ag.length ? [{name: 'agenda_item_id', label: 'بند جدول الأعمال', type: 'select', options: [opt('', 'بدون ربط ببند'), ...ag.map(a => opt(a.id, `${a.item_order}. ${a.title}`))], value: D.decision.agenda_item_id || ''}] : []),
     {name: 'deliverables', label: 'المخرجات المطلوبة', type: 'textarea', rows: 2, maxlength: 4000, value: D.decision.deliverables},
     {name: 'success_criteria', label: 'مؤشرات الإنجاز', type: 'textarea', rows: 2, maxlength: 4000, value: D.decision.success_criteria},
     {name: 'notes', label: 'ملاحظات', type: 'textarea', rows: 2, maxlength: 4000, value: D.decision.notes}],
-    onSubmit: async v => { await DM.rpc('dm_update_draft', {p_id: D.decision.id, p: v}); toast('حُفظت التعديلات'); DM.openDetail(D.decision.id); }});
+    onSubmit: async v => {
+      const {agenda_item_id, ...rest} = v;
+      await DM.rpc('dm_update_draft', {p_id: D.decision.id, p: rest});
+      if (agenda_item_id !== undefined && (agenda_item_id || '') !== (D.decision.agenda_item_id || '')) await DM.rpc('dm_set_agenda_item', {p_id: D.decision.id, p_agenda: agenda_item_id || null});
+      toast('حُفظت التعديلات'); DM.openDetail(D.decision.id);
+    }});
+  };
 
   // ───────────── الحوارات المتخصصة ─────────────
   const refresh = (D, tab) => DM.openDetail(D.decision.id, tab);
@@ -212,6 +225,7 @@
     const panels = {
       summary: `<div class="dm-info-grid">
           <div><span>الجهة</span><b>${esc(DM.BODY[d.body_kind])} — ${esc(d.committee_name || '')}</b></div><div><span>الاجتماع</span><b>${esc(d.meeting_title || '—')}${d.meeting_no ? ' (' + esc(d.meeting_no) + ')' : ''}</b></div>
+          ${d.agenda_item_id ? `<div><span>بند جدول الأعمال</span><b>${esc(d.agenda_title || '—')}</b></div>` : ''}
           <div><span>تاريخ القرار</span><b>${esc(DM.date(d.decision_date))}</b></div><div><span>النوع / التصنيف</span><b>${esc(DM.RECORD[d.record_type])} · ${esc(DM.CATEGORY[d.category])}</b></div>
           <div><span>الأولوية</span><b>${DM.prio(d.priority)}</b></div><div><span>الإدارة المكلفة</span><b>${esc(d.unit_name || '—')}</b></div>
           <div><span>المسؤول عن التنفيذ</span><b>${esc(d.owner_name || '—')}</b></div><div><span>المساعدون</span><b>${esc(D.assistants.map(a => a.name).join('، ') || '—')}</b></div>
@@ -284,6 +298,10 @@
       await DM.ready; await DM.loadRefs();
       const D = await DM.rpc('dm_decision_detail', {p_id: id});
       if (!D) { el.innerHTML = '<div class="dm-banner">القرار غير موجود أو لا تملك الاطلاع عليه.</div>'; return; }
+      if (D.decision.agenda_item_id) { // عنوان البند الذي صدر عنه القرار (لا يُسقط الشاشة إن تعذّر جلبه)
+        const a = await DM.sel('agenda_items', q => q.eq('id', D.decision.agenda_item_id)).catch(() => []);
+        if (a[0]) D.decision.agenda_title = `${a[0].item_order}. ${a[0].title}`;
+      }
       render(el, D, tab || (DM.state.detailId === id ? DM.state.detailTab : 'summary') || 'summary'); DM.state.detailId = id;
     } catch (e) { el.innerHTML = `<div class="dm-banner" role="alert">${esc(e.message)}</div>`; failed('تفاصيل القرار', e); }
     finally { el.removeAttribute('aria-busy'); }
