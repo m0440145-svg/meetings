@@ -168,11 +168,11 @@
         <div class="dm-dlg-head"><h3>إدارة الاجتماع</h3><button type="button" class="dm-x" data-x aria-label="إغلاق">✕</button></div>
         <section class="mm-sec"><div class="mm-row"><strong>${esc(m.title)}</strong><span class="status-pill">${esc(m.status || '')}</span></div>
           <div class="meta mm-meta"><span>${esc(m.committees?.name || '')}</span><span>${esc(m.gregorian_date || '')}</span><span>${esc((m.start_time || '').slice(0, 5))}${m.end_time ? '–' + esc(m.end_time.slice(0, 5)) : ''}</span><span>${esc(m.mode || '')}</span>${m.location ? `<span>${esc(m.location)}</span>` : ''}${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">رابط الاجتماع</a>` : ''}</div>
-          <div class="dm-acts mm-top"><button type="button" class="dm-btn primary" data-edit>تعديل البيانات</button><button type="button" class="dm-btn danger" data-del>حذف الاجتماع</button></div></section>
+          <div class="dm-acts mm-top"><button type="button" class="dm-btn primary" data-edit>تعديل البيانات</button><button type="button" class="dm-btn ghost" data-ics>إضافة إلى التقويم (ICS)</button><button type="button" class="dm-btn danger" data-del>حذف الاجتماع</button></div></section>
         <section class="mm-sec"><div class="mm-row"><h4>جدول الأعمال (${agenda.length})</h4><button type="button" class="dm-btn ghost sm" data-addag>＋ بند</button></div>
           ${agenda.length ? `<ol class="mm-list">${agenda.map(a => `<li><span>${esc(a.title)} <small class="meta">${a.duration_minutes || ''} دقيقة</small></span><button type="button" class="dm-btn ghost sm" data-delag="${esc(a.id)}">حذف</button></li>`).join('')}</ol>` : '<p class="meta">لا توجد بنود.</p>'}</section>
         <section class="mm-sec"><div class="mm-row"><h4>المرفقات (${files.length})</h4><button type="button" class="dm-btn ghost sm" data-addfile>＋ مرفق</button></div>
-          ${files.length ? `<ul class="mm-list">${files.map(f => `<li><span>${esc(f.file_name)} <small class="meta">${f.size_bytes ? Math.round(f.size_bytes / 1024) + ' ك.ب' : ''}</small></span><span class="mm-fa"><button type="button" class="dm-btn ghost sm" data-openf="${esc(f.id)}">فتح</button><button type="button" class="dm-btn ghost sm" data-delf="${esc(f.id)}">حذف</button></span></li>`).join('')}</ul>` : '<p class="meta">لا توجد مرفقات.</p>'}</section>
+          ${files.length ? `<ul class="mm-list">${files.map(f => `<li><span>${esc(f.file_name)} <small class="meta">${f.size_bytes ? Math.round(f.size_bytes / 1024) + ' ك.ب' : ''}</small>${f.agenda_item_id && agenda.find(a => a.id === f.agenda_item_id) ? `<br><small class="meta">البند: ${esc(agenda.find(a => a.id === f.agenda_item_id).title)}</small>` : ''}</span><span class="mm-fa"><button type="button" class="dm-btn ghost sm" data-openf="${esc(f.id)}">فتح</button>${agenda.length ? `<button type="button" class="dm-btn ghost sm" data-agf="${esc(f.id)}">البند</button>` : ''}<button type="button" class="dm-btn ghost sm" data-delf="${esc(f.id)}">حذف</button></span></li>`).join('')}</ul>` : '<p class="meta">لا توجد مرفقات.</p>'}</section>
         ${state.recOk ? `<section class="mm-sec"><div class="mm-row"><h4>تسجيل الاجتماع</h4>${state.rec ? '' : '<button type="button" class="dm-btn ghost sm" data-addrec>＋ رابط التسجيل</button>'}</div>
           ${state.rec ? `<ul class="mm-list"><li><span>${safeUrl(state.rec.url) ? `<a href="${esc(safeUrl(state.rec.url))}" target="_blank" rel="noopener noreferrer">فتح التسجيل</a>` : 'رابط غير صالح'} ${retention(state.rec)}${state.rec.note ? `<br><small class="meta">${esc(state.rec.note)}</small>` : ''}</span><span class="mm-fa"><button type="button" class="dm-btn ghost sm" data-editrec>تعديل</button><button type="button" class="dm-btn ghost sm" data-delrec>حذف</button></span></li></ul>` : '<p class="meta">لا يوجد تسجيل. إن سُجّل الاجتماع فأعلم الحضور وأثبت ذلك في المحضر.</p>'}</section>` : ''}
         <p class="dm-err" role="alert" data-err></p>
@@ -195,6 +195,14 @@
         if (!ok.ok) return;
         const c = await db(); const {data, error} = await c.from('meeting_recordings').delete().eq('meeting_id', m.id).select('meeting_id');
         if (error) err(error, 'تعذر حذف التسجيل'); if (!data?.length) throw new Error('لم يُحذف: لا تملك صلاحية');
+        await refresh();
+      });
+      if (t.hasAttribute('data-ics')) return run(async () => { if (!window.ehsanIcs) throw new Error('وحدة التقويم غير جاهزة'); window.ehsanIcs.download(m, agenda); });
+      if (t.dataset.agf) return run(async () => { // ربط المرفق ببند جدول الأعمال (الترحيل 031)
+        const f = files.find(x => x.id === t.dataset.agf); if (!f) return;
+        const opt = (v, l) => ({value: v, label: l});
+        const r = await DM.form({title: 'ربط المرفق ببند', fields: [{name: 'ag', label: f.file_name, type: 'select', options: [opt('', 'بدون ربط ببند'), ...agenda.map(a => opt(a.id, `${a.item_order}. ${a.title}`))], value: f.agenda_item_id || ''}], submit: 'حفظ',
+          onSubmit: async v => { const c = await db(); const {error} = await c.rpc('attachment_set_agenda', {p_attachment: f.id, p_agenda: v.ag || null}); if (error) throw new Error(/function|schema cache/i.test(error.message) ? 'الميزة تتطلب تطبيق الترحيل 031' : error.message); } });
         await refresh();
       });
       if (t.hasAttribute('data-addfile')) return run(async () => { if (await addFiles(m)) await refresh(); });
