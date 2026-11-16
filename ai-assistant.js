@@ -51,6 +51,7 @@
   }
 
   function classify(seg) {
+    if (/^التصويت\s/.test(seg)) return ''; // سطر نتيجة تصويت (من مسودة المحضر): موضوعه قد يحوي «تفويض» أو «اعتماد» وليس قرارًا ولا مهمة بذاته
     if (RE_DEC.test(seg)) return 'قرار';
     if (RE_TASK.test(seg) || RE_TASK_ANY.test(seg.slice(0, 40))) return 'مهمة';
     if (RE_REC.test(seg)) return 'توصية';
