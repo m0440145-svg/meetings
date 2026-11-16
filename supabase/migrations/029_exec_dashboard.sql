@@ -59,7 +59,7 @@ begin
     jsonb_build_object('key', 'ontime', 'label', 'الالتزام بموعد تنفيذ القرارات', 'dir', 'ge', 'target', 80, 'num', dc_ontime, 'den', dc_eval),
     jsonb_build_object('key', 'overdue', 'label', 'نسبة القرارات المتأخرة', 'dir', 'le', 'target', 10, 'num', dc_overdue, 'den', dc_open_due),
     jsonb_build_object('key', 'evidence', 'label', 'قرارات منجزة بأدلة تنفيذ مقبولة' || case when req_ev then '' else ' (غير مشترطة حاليًا)' end, 'dir', 'ge', 'target', 90, 'num', dc_done_ev, 'den', dc_done),
-    jsonb_build_object('key', 'quorum', 'label', 'تصويتات مغلقة تحقق نصابها', 'dir', 'ge', 'target', 100, 'num', v_quorum, 'den', v_closed));
+    jsonb_build_object('key', 'quorum', 'label', 'تصويتات مغلقة (ذات نصاب محدد) حقّقت نصابها', 'dir', 'ge', 'target', 100, 'num', v_quorum, 'den', v_closed));
   select coalesce(jsonb_agg(i || jsonb_build_object(
       'value', case when (i->>'den')::int > 0 then round(100.0 * (i->>'num')::int / (i->>'den')::int, 1) end,
       'met', case when (i->>'den')::int = 0 then null
