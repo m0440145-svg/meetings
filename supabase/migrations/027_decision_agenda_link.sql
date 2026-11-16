@@ -7,7 +7,7 @@ begin;
 alter table public.decisions add column if not exists agenda_item_id uuid references public.agenda_items(id) on delete set null;
 create index if not exists decisions_agenda_idx on public.decisions(agenda_item_id) where agenda_item_id is not null;
 
--- p_agenda = null يفكّ الربط. المسودة لمن يملك صلاحية تعديلها؛ وللمدير/أمين السر في أي حالة (تصحيح ربط فقط، لا نص القرار).
+-- p_agenda = null يفكّ الربط. للمسودة فقط ولمن يملك صلاحية تعديلها في وحدة القرارات (نفس شرط dm_update_draft)، فلا يتجاوز الربط نظام الأدوار القائم.
 create or replace function public.dm_set_agenda_item(p_id uuid, p_agenda uuid) returns void
 language plpgsql security definer set search_path = public as $$
 declare d public.decisions%rowtype; uid uuid := auth.uid(); a_meeting uuid; ok boolean;
@@ -15,7 +15,7 @@ begin
   if uid is null then raise exception 'يجب تسجيل الدخول'; end if;
   select * into d from public.decisions where id = p_id for update;
   if not found then raise exception 'القرار غير موجود'; end if;
-  ok := public.is_admin() or (d.status = 'draft' and (public.dm_has_perm(uid, 'edit_draft', p_id) or (d.created_by = uid and public.dm_has_perm(uid, 'create', p_id))));
+  ok := d.status = 'draft' and (public.dm_has_perm(uid, 'edit_draft', p_id) or (d.created_by = uid and public.dm_has_perm(uid, 'create', p_id)));
   if not ok then raise exception 'لا تملك صلاحية تعديل ربط هذا القرار'; end if;
   if p_agenda is not null then
     select meeting_id into a_meeting from public.agenda_items where id = p_agenda;
