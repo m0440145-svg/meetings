@@ -10,6 +10,10 @@ create table if not exists public.attachment_reads (
   read_count int not null default 1,
   primary key (attachment_id, user_id)
 );
+-- قاعدة الإنتاج فيها جدول attachment_reads قديم من الأساس (attachment_id, user_id, read_at) وغير مستخدم؛ تُضاف إليه الأعمدة الناقصة فقط
+alter table public.attachment_reads add column if not exists first_read_at timestamptz not null default now();
+alter table public.attachment_reads add column if not exists last_read_at timestamptz not null default now();
+alter table public.attachment_reads add column if not exists read_count int not null default 1;
 
 alter table public.attachment_reads enable row level security;
 drop policy if exists attachment_reads_read on public.attachment_reads;
