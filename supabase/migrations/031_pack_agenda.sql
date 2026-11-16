@@ -39,6 +39,11 @@ begin
   update public.attachments set agenda_item_id = p_agenda where id = p_attachment;
 end $$;
 
+
+-- حماية من فقد البيانات: كان attachments_agenda_item_id_fkey بـ ON DELETE CASCADE، فحذف بند الأعمال سيحذف سجلات المرفقات المرتبطة به (ويترك ملفاتها يتيمة في التخزين).
+-- لم يكن ذلك ظاهرًا لأن العمود لم يكن مستخدمًا؛ وبعد ربط المرفقات بالبنود صار خطرًا فعليًا. يُغيَّر إلى SET NULL: يبقى المرفق في الاجتماع ويفقد ربطه بالبند فقط. لا أثر على أي بيانات الآن (0 مرفقات مرتبطة).
+alter table public.attachments drop constraint if exists attachments_agenda_item_id_fkey;
+alter table public.attachments add constraint attachments_agenda_item_id_fkey foreign key (agenda_item_id) references public.agenda_items(id) on delete set null;
 revoke all on function public.attachment_set_agenda(uuid, uuid) from public, anon;
 grant execute on function public.attachment_set_agenda(uuid, uuid) to authenticated;
 
