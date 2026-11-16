@@ -21,6 +21,10 @@ html[data-theme=dark] .demo-banner{background:#3a2a12;color:#f1c47a;border-color
 
   function apply() {
     for (const view of Object.keys(DEMO)) {
+      if (view === 'live' && document.documentElement.dataset.liveServer) { // رُبطت الشاشة بالخادم (الترحيل 019): لا وسم ولا تنبيه
+        document.querySelectorAll('#sidebar .nav-item[data-view="live"] .demo-tag, #view-live .demo-banner').forEach(e => e.remove());
+        continue;
+      }
       const btn = document.querySelector(`#sidebar .nav-item[data-view="${view}"]`);
       if (btn && !btn.querySelector('.demo-tag')) {
         const tag = document.createElement('em'); tag.className = 'demo-tag'; tag.textContent = 'تجريبي'; tag.title = 'واجهة تجريبية محلية';
