@@ -9,40 +9,94 @@
   let db, me, minutes = [];
 
   // ───────── المحلل التجريبي (قواعد نصية) ─────────
-  const RE_AGENDA = /^\s*(?:البند\s*)?(?:\(?\d{1,2}\)?\s*[-–.):]|(?:الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر)\s*[:\-–])\s*(.+)$/;
-  const RE_DECISION = /(قرر(?:ت)?\s+(?:المجلس|اللجنة|الأعضاء)|تقرر|وافق(?:ت)?\s+(?:المجلس|اللجنة|الأعضاء)|اعتمد(?:ت)?\s+(?:المجلس|اللجنة)|أقر(?:ت)?\s+(?:المجلس|اللجنة)|تمت الموافقة|تم اعتماد)/;
-  const RE_RECOMMEND = /(يوصي|أوصى|أوصت|توصي|توصية|يُوصى|يوصى)/;
-  const RE_TASK = /(يكلّ?ف|كلّ?ف|كُلّ?ف|يُكلَّف|تكليف|يتولى|تتولى|تولّى|يلتزم|تلتزم|على\s+(?:الأستاذ|الأستاذة|الأخ|الأخت|الدكتور|الدكتورة|المهندس|المهندسة|مدير|رئيس|أمين))/;
-  const RE_OWNER = /(?:الأستاذ(?:ة)?|الأخ|الأخت|الدكتور(?:ة)?|د\.|م\.|المهندس(?:ة)?|مدير(?:ة)?|رئيس|أمين(?: السر| الصندوق)?)\s+((?:[ء-ي]+)(?:\s+[ء-ي]+){0,2})/;
+  // مبني على صياغة محاضر الجمعية الفعلية: جدول «محاور» مرقّم، ثم جدول «قرارات وتوصيات» بالترقيم نفسه، فيُربط كل صف بمحوره برقمه.
+  // الصف الواحد قد يجمع إحاطة («اطلع / ناقش / أشاد») وتوصية («أكد على أهمية / أوصى») وقرارًا («الموافقة على») وتكليفًا («تفويض … بمتابعة»)،
+  // فيُقطع عند أفعال الإجراء ويُصنَّف كل مقطع وحده؛ ومقاطع الإحاطة والشكر لا تُستخرج.
+  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩', FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
+  const latinDigits = s => String(s).replace(/[٠-٩۰-۹]/g, d => String(AR_DIGITS.includes(d) ? AR_DIGITS.indexOf(d) : FA_DIGITS.indexOf(d)));
+  const ORD = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'السابع', 'الثامن', 'التاسع', 'العاشر'];
+  const RE_NUM = /^\s*\(?(\d{1,2})\)?\s*[-–.):|]?\s+(.{3,})$/;
+  const RE_ORDINAL = new RegExp('^\\s*(?:البند\\s*)?(' + ORD.join('|') + ')\\s*[:\\-–]\\s*(.+)$');
+  const RE_SEC_AGENDA = /^\s*(?:محاور|جدول\s+الأعمال|بنود\s+الاجتماع|جدول\s+أعمال)/;
+  const RE_SEC_OUT = /^\s*(?:قرارات|القرارات|توصيات|التوصيات|نتائج|ما\s+تم|مخرجات)/;
+  const RE_HEADING = /^\s*(?:محضر|محاور|جدول\s+الأعمال|قرارات|القرارات|التوصيات|توصيات|رقم\s+الاجتماع|الحضور|بسم\s+الله|اعتماد\s+رئيس)/;
+  // أفعال الإجراء التي يبدأ عندها مقطع جديد (مسبوقة اختياريًا بـ «، و / كما / ثم / مع»)
+  const VERBS = 'أكد|اكد|أكّد|التأكيد|أوصى|اوصى|أوصت|يوصي|توصي(?=\\s)|يُوصى|يوصى|وجّه|وجه|توجيه|قرر|قرّر|تقرر|الموافقة|وافق|اعتمد|اعتماد|إقرار|أقر|تفويض|فوّض|يفوض|تكليف|يكلّف|يكلف|كلّف|كلف|يُكلَّف|يتولى|تتولى|مراعاة|ضرورة';
+  const RE_CUT = new RegExp('(?:[،,]\\s*|\\s+)(?:و\\s*|كما\\s+|ثم\\s+|مع\\s+)?(?=(?:' + VERBS + '))');
+  const RE_DEC = /^(?:الموافقة|وافق|قرر|قرّر|تقرر|اعتمد|اعتماد|إقرار|أقر|تمت\s+الموافقة|تم\s+اعتماد)/;
+  const RE_TASK = /^(?:تفويض|فوّض|يفوض|تكليف|يكلّف|يكلف|كلّف|كلف|يُكلَّف|يتولى|تتولى)/;
+  const RE_REC = /^(?:أكد|اكد|أكّد|التأكيد|أوصى|اوصى|أوصت|يوصي|توصي|يُوصى|يوصى|وجّه|وجه|توجيه|مراعاة|ضرورة)/;
+  const RE_TASK_ANY = /(?:يكلّ?ف|كلّ?ف|يُكلَّف|تكليف|تفويض|يتولى|تتولى|على\s+(?:الأستاذ|الأستاذة|الدكتور|الدكتورة|المهندس|المهندسة|المدير|مدير|الإدارة|إدارة|لجنة|اللجنة|أمين))/;
+  const RE_TITLE_OWNER = /(?:الأستاذ(?:ة)?|أ\.|الدكتور(?:ة)?|د\.|المهندس(?:ة)?|م\.)\s*((?:[ء-ي]+)(?:\s+[ء-ي]+)?)/;
   const RE_DUE = /(خلال\s+\d+\s*(?:يوم(?:ا|ًا)?|أيام|أسبوع(?:ا|ًا)?|أسابيع|شهر(?:ا|ًا)?|أشهر|شهور)|خلال\s+(?:أسبوع|أسبوعين|شهر|شهرين|يومين)|بحلول\s+[^،.؛]{2,30}|قبل\s+(?:نهاية\s+)?[^،.؛]{2,30}|نهاية\s+(?:الشهر|الأسبوع|الربع|العام|السنة)[^،.؛]{0,15}|في\s+موعد\s+أقصاه\s+[^،.؛]{2,30}|\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{4}-\d{2}-\d{2})/;
   const clean = s => s.replace(/\s+/g, ' ').trim();
-  const title = s => { const t = clean(s).replace(/^[-–•*\d.)(\s]+/, ''); return t.length > 150 ? t.slice(0, 147) + '…' : t; };
+  const strip = s => clean(s).replace(/^[-–•*\d.)(\s،,]+/, '').replace(/[،,؛\s]+$/, '');
+  const short = (s, n) => s.length > n ? s.slice(0, n - 1).replace(/\s\S*$/, '') + '…' : s;
 
-  // المسؤول: بعد اللقب كلمتان كحد أقصى للشخص، وللمنصب (مدير/رئيس/أمين) كلمة واحدة؛ ويتوقف عند كلمة تبدأ بحرف جر (ب/ل) لأنها غالبًا المهمة
+  // المسؤول: بعد فعل التكليف/التفويض («تفويض المدير التنفيذي بمتابعة» ← «المدير التنفيذي»)، ويتوقف عند كلمة تبدأ بحرف جر؛ وإلا بعد اللقب (أ. / د. / م.)
   function ownerOf(s) {
-    const m = s.match(RE_OWNER); if (!m) return '';
-    const role = /^(?:مدير|رئيس|أمين)/.test(m[0].trim());
-    const words = [];
-    for (const w of m[1].split(' ')) { if (words.length && /^[بل]/.test(w)) break; words.push(w); }
-    const text = words.slice(0, role ? 1 : 2).join(' ');
-    return role ? clean(m[0].split(/\s+/)[0] + ' ' + text) : text;
+    const m = s.match(/(?:تفويض|فوّض|يفوض|تكليف|يكلّف|يكلف|كلّف|كلف|يُكلَّف|يتولى|تتولى|على)\s+((?:[ء-ي.]+\s*){1,5})/);
+    if (m) {
+      const words = [];
+      for (const w of m[1].trim().split(/\s+/)) {
+        // يتوقف عند حرف جر، أو مصدر يبدأ به نص المهمة («متابعة / إعداد / تنفيذ …»)
+        if (words.length && (/^[بل][ء-ي]{2,}/.test(w) || /^(?:في|من|إلى|الى|على|عن|حتى|خلال|قبل)$/.test(w) || /^(?:متابعة|إعداد|اعداد|تنفيذ|التنسيق|تنسيق|رفع|دراسة|استكمال|مراجعة|تقديم|إعادة|تحديث|إنهاء|التواصل|تواصل)$/.test(w))) break;
+        words.push(w); if (words.length >= 4) break;
+      }
+      const o = words.join(' ').replace(/^(?:الأستاذ(?:ة)?|أ\.|الدكتور(?:ة)?|د\.|المهندس(?:ة)?|م\.)\s*/, '');
+      if (o && !/^(?:ذلك|ما|أن)$/.test(o)) return o;
+    }
+    const t = s.match(RE_TITLE_OWNER);
+    return t ? t[1] : '';
   }
+
+  function classify(seg) {
+    if (RE_DEC.test(seg)) return 'قرار';
+    if (RE_TASK.test(seg) || RE_TASK_ANY.test(seg.slice(0, 40))) return 'مهمة';
+    if (RE_REC.test(seg)) return 'توصية';
+    return '';
+  }
+
+  // يستخرج من صف/جملة واحدة كل المقاطع الإجرائية مع ربطها بالمحور
+  function fromRow(row, agendaRef, out, seen) {
+    // مقطع قصير جدًا («قرر المجلس») يُضم إلى ما بعده حتى لا يُفصل الفعل عن مفعوله («قرر المجلس اعتماد …»)
+    const segs = row.split(RE_CUT).map(strip).filter(Boolean).reduce((a, s) => { if (a.length && a[a.length - 1].length < 22) a[a.length - 1] += ' ' + s; else a.push(s); return a; }, []);
+    let lastDecision = '';
+    for (const seg of segs) {
+      const kind = classify(seg); if (!kind || seg.length < 8) continue;
+      const key = kind + '|' + seg; if (seen.has(key)) continue; seen.add(key);
+      let t = seg;
+      if (kind === 'قرار') lastDecision = seg;
+      // «تفويض … بمتابعة ذلك» يُكمَّل بموضوع القرار الذي يسبقه في الصف نفسه، أو بالمحور
+      if (kind === 'مهمة' && /(?:ذلك|ما\s+سبق|ما\s+تقدم)\s*\.?$/.test(seg)) t = seg.replace(/\.$/, '') + ' — ' + short(lastDecision || agendaRef || '', 90);
+      out.push({kind, title: short(t, 150), body: row !== seg ? short(clean(row), 2000) : '', quote: seg.slice(0, 1000), agenda_ref: (agendaRef || '').slice(0, 200),
+        owner_hint: kind === 'مهمة' ? ownerOf(seg).slice(0, 120) : '', due_hint: kind === 'مهمة' ? ((seg.match(RE_DUE) || [])[1] || '').slice(0, 120) : ''});
+    }
+  }
+
   function analyze(text) {
-    const out = [], seen = new Set();
-    let agenda = '';
-    const sentences = String(text || '').split(/\r?\n|(?<=[.؟!؛])\s+/).map(s => s.trim()).filter(Boolean);
-    for (const raw of sentences) {
-      const am = raw.match(RE_AGENDA);
-      if (am && raw.length < 140 && !RE_DECISION.test(raw) && !RE_TASK.test(raw)) { agenda = clean(am[1]); continue; }
-      const s = clean(raw);
-      if (s.length < 12 || seen.has(s)) continue;
-      const isTask = RE_TASK.test(s), isDec = RE_DECISION.test(s), isRec = RE_RECOMMEND.test(s);
-      if (!isTask && !isDec && !isRec) continue;
-      seen.add(s);
-      const owner = ownerOf(s), due = (s.match(RE_DUE) || [])[1] || '';
-      // التكليف الصريح مهمة؛ وإلا القرار ثم التوصية. الجملة الواحدة تُصنَّف مرة واحدة حتى لا تتكرر
-      const kind = isTask ? 'مهمة' : isDec ? 'قرار' : 'توصية';
-      out.push({kind, title: title(s), body: '', quote: s.slice(0, 1000), agenda_ref: agenda.slice(0, 200), owner_hint: kind === 'مهمة' ? clean(owner) : '', due_hint: kind === 'مهمة' ? clean(due) : ''});
+    const out = [], seen = new Set(), agendaByNum = new Map();
+    let section = '', current = '';
+    const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/ /g, ' ').trim()).filter(Boolean);
+    for (const raw of lines) {
+      const line = latinDigits(raw);
+      if (RE_SEC_AGENDA.test(line) && line.length < 60) { section = 'agenda'; continue; }
+      if (RE_SEC_OUT.test(line) && line.length < 60) { section = 'out'; continue; }
+      const ord = line.match(RE_ORDINAL);
+      if (ord && line.length < 140) { current = strip(ord[2]); agendaByNum.set(ORD.indexOf(ord[1]) + 1, current); continue; } // «البند الأول: …» عنوان محور دائمًا
+      const num = line.match(RE_NUM);
+      if (num) {
+        const n = Number(num[1]), body = num[2];
+        const firstTime = !agendaByNum.has(n);
+        const actionable = body.split(RE_CUT).some(s => classify(strip(s)));
+        // صف محور: في قسم المحاور، أو أول ظهور للرقم بلا فعل إجرائي (والمحاور قصيرة عادة)
+        if (section === 'agenda' || (section !== 'out' && firstTime && !actionable && body.length < 160)) { agendaByNum.set(n, strip(body)); continue; }
+        fromRow(body, agendaByNum.get(n) || current, out, seen);
+        continue;
+      }
+      if (RE_HEADING.test(line) && line.length < 80) continue;
+      // نص نثري: يُقسم إلى جمل ثم مقاطع
+      for (const sent of line.split(/(?<=[.؟!؛])\s+/)) fromRow(sent, current, out, seen);
     }
     return out;
   }
