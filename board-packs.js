@@ -23,6 +23,7 @@
 .bp-item{border:1px solid var(--line,#eadfd8);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center}
 .bp-no{width:30px;height:30px;border-radius:50%;background:var(--primary,#cf6028);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
 .bp-name{font-weight:700;word-break:break-word}
+.bp-sec{display:grid;gap:8px}.bp-sec-h{margin:10px 0 0;font-size:15px;border-inline-start:4px solid var(--primary,#cf6028);padding-inline-start:8px}.bp-item select{max-width:100%}
 @media(max-width:560px){.bp-row{grid-template-columns:1fr}.bp-item{grid-template-columns:34px 1fr}.bp-item .bp-acts{grid-column:1/-1}}`;
 
   async function load() {
@@ -62,28 +63,55 @@
     ]);
     if (error || !p) return toast('تعذر فتح الحزمة');
     const rows = items || [];
-    const html = () => `<div class="bp-head"><h3>${esc(p.title)}</h3><button type="button" class="bp-x" data-x aria-label="إغلاق">✕</button></div>
-      <div class="bp-meta"><span>${esc(p.meetings?.title || '')}${p.meetings?.gregorian_date ? ' — ' + esc(p.meetings.gregorian_date) : ''}</span><span class="badge ${p.status === 'منشورة' ? 'good' : 'warn'}">${esc(p.status)}</span></div>
+    const [ag, rd, st] = await Promise.all([
+      db.from('agenda_items').select('id,item_order,title').eq('meeting_id', p.meeting_id).order('item_order'),
+      db.from('attachment_reads').select('attachment_id').eq('user_id', me.uid),
+      me.admin ? db.rpc('attachment_read_stats') : Promise.resolve({data: []})
+    ]);
+    const agenda = ag.data || [], mine = new Set((rd.data || []).map(x => x.attachment_id)), stats = new Map((st.data || []).map(x => [x.attachment_id, x]));
+    // التجميع: بنود جدول الأعمال بترتيبها، ثم «عناصر عامة» لما لا بند له؛ داخل كل مجموعة بترتيب position
+    const groups = [...agenda.map(a => ({key: a.id, title: `${a.item_order}. ${a.title}`, items: []})), {key: '', title: 'عناصر عامة (غير مرتبطة ببند)', items: []}];
+    const byKey = new Map(groups.map(g => [g.key, g]));
+    rows.forEach(r => (byKey.get(r.agenda_item_id || '') || byKey.get('')).items.push(r));
+    groups.forEach(g => g.items.sort((a, b) => (a.position || 0) - (b.position || 0)));
+    const visible = groups.filter(g => g.items.length || (me.admin && g.key));
+    let no = 0;
+    const itemHtml = (it, g, i) => {
+      const a = it.attachments, v = it.vdr_documents; no += 1;
+      const label = a ? esc(a.file_name) : v ? `${esc(v.title)} <span class="badge warn">${esc(v.confidentiality)}</span>` : '<em>عنصر غير متاح لك</em>';
+      const rs = a ? stats.get(a.id) : null;
+      const meta = a ? esc(size(a.size_bytes)) : v ? 'وثيقة سرية: تُعرض داخل المنصة' : 'لا تملك صلاحية الاطلاع عليه';
+      const read = a ? `<span class="badge ${mine.has(a.id) ? 'good' : 'warn'}">${mine.has(a.id) ? 'قرأته' : 'لم تقرأه'}</span>${rs ? `<span>القراءة: ${rs.readers}${rs.audience ? ' من ' + rs.audience : ''}</span>` : ''}` : '';
+      const sel = me.admin ? `<label class="bp-meta">البند <select data-bp-ag="${esc(it.id)}"><option value="">عام</option>${agenda.map(x => `<option value="${esc(x.id)}" ${x.id === it.agenda_item_id ? 'selected' : ''}>${esc(x.item_order + '. ' + x.title)}</option>`).join('')}</select></label>` : '';
+      return `<div class="bp-item" data-item="${esc(it.id)}"><span class="bp-no">${no}</span><div><div class="bp-name">${label}</div><div class="bp-meta"><span>${meta}</span>${read}${it.note ? `<span>${esc(it.note)}</span>` : ''}</div>${sel}</div>
+        <div class="bp-acts">${a || v ? `<button type="button" class="btn primary small" data-bp-it="${esc(it.id)}">${a ? 'فتح' : 'عرض'}</button>` : ''}${me.admin ? `<button type="button" class="btn ghost small" data-bp-up="${esc(it.id)}" ${i === 0 ? 'disabled' : ''} aria-label="أعلى">▲</button><button type="button" class="btn ghost small" data-bp-down="${esc(it.id)}" ${i === g.items.length - 1 ? 'disabled' : ''} aria-label="أسفل">▼</button><button type="button" class="btn ghost small" data-bp-rm="${esc(it.id)}">إزالة</button>` : ''}</div></div>`;
+    };
+    const html = () => { no = 0; return `<div class="bp-head"><h3>${esc(p.title)}</h3><button type="button" class="bp-x" data-x aria-label="إغلاق">✕</button></div>
+      <div class="bp-meta"><span>${esc(p.meetings?.title || '')}${p.meetings?.gregorian_date ? ' — ' + esc(p.meetings.gregorian_date) : ''}</span><span class="badge ${p.status === 'منشورة' ? 'good' : 'warn'}">${esc(p.status)}</span><button type="button" class="btn ghost small" data-bp-ics>إضافة الاجتماع إلى التقويم</button></div>
       ${p.notes ? `<p>${esc(p.notes)}</p>` : ''}
       ${me.admin ? '<div class="bp-acts"><button type="button" class="btn primary small" data-bp-add>＋ إضافة عناصر</button></div>' : ''}
-      ${rows.map((it, i) => {
-        const a = it.attachments, v = it.vdr_documents;
-        const label = a ? esc(a.file_name) : v ? `${esc(v.title)} <span class="badge warn">${esc(v.confidentiality)}</span>` : '<em>عنصر غير متاح لك</em>';
-        const meta = a ? esc(size(a.size_bytes)) : v ? 'وثيقة سرية: تُعرض داخل المنصة' : 'لا تملك صلاحية الاطلاع عليه';
-        return `<div class="bp-item" data-item="${esc(it.id)}"><span class="bp-no">${i + 1}</span><div><div class="bp-name">${label}</div><div class="bp-meta"><span>${meta}</span>${it.note ? `<span>${esc(it.note)}</span>` : ''}</div></div>
-          <div class="bp-acts">${a || v ? `<button type="button" class="btn primary small" data-bp-it="${esc(it.id)}">${a ? 'فتح' : 'عرض'}</button>` : ''}${me.admin ? `<button type="button" class="btn ghost small" data-bp-up="${esc(it.id)}" ${i === 0 ? 'disabled' : ''} aria-label="أعلى">▲</button><button type="button" class="btn ghost small" data-bp-down="${esc(it.id)}" ${i === rows.length - 1 ? 'disabled' : ''} aria-label="أسفل">▼</button><button type="button" class="btn ghost small" data-bp-rm="${esc(it.id)}">إزالة</button>` : ''}</div></div>`;
-      }).join('') || '<div class="card">الحزمة فارغة.</div>'}`;
+      ${visible.map(g => `<section class="bp-sec"><h4 class="bp-sec-h">${esc(g.title)} <small class="bp-meta">(${g.items.length})</small></h4>${g.items.map((it, i) => itemHtml(it, g, i)).join('') || '<div class="bp-meta">لا عناصر تحت هذا البند.</div>'}</section>`).join('') || '<div class="card">الحزمة فارغة.</div>'}`; };
     const dlg = dialog(html());
+    dlg.addEventListener('change', async e => {
+      const s = e.target.closest('[data-bp-ag]'); if (!s) return;
+      const r = await db.from('board_pack_items').update({agenda_item_id: s.value || null}).eq('id', s.dataset.bpAg);
+      if (r.error) return toast(r.error.message || 'تعذر تغيير البند');
+      dlg.close(); return openPack(id);
+    });
     dlg.addEventListener('click', async e => {
       const it = e.target.closest('[data-bp-it]'), up = e.target.closest('[data-bp-up]'), dn = e.target.closest('[data-bp-down]'), rm = e.target.closest('[data-bp-rm]');
       if (it) { const x = rows.find(r => r.id === it.dataset.bpIt); if (x?.attachments) openAttachment(x.attachments); else if (x?.vdr_documents) { if (window.ehsanVdr) window.ehsanVdr.view(x.vdr_documents.id); else toast('غرفة البيانات غير جاهزة'); } return; }
+      if (e.target.closest('[data-bp-ics]')) { const {data: m} = await db.from('meetings').select('*,committees(name)').eq('id', p.meeting_id).single(); if (m && window.ehsanIcs) window.ehsanIcs.download(m, agenda); else toast('تعذر تجهيز ملف التقويم'); return; }
       if (e.target.closest('[data-bp-add]')) { dlg.close(); await addItems(p, rows); return openPack(id); }
       if (up || dn) {
-        const id2 = (up || dn).dataset.bpUp || (up || dn).dataset.bpDown, i = rows.findIndex(r => r.id === id2), j = up ? i - 1 : i + 1;
-        if (i < 0 || j < 0 || j >= rows.length) return;
-        const [a, b] = [rows[i], rows[j]];
-        const r1 = await db.from('board_pack_items').update({position: b.position}).eq('id', a.id);
-        const r2 = await db.from('board_pack_items').update({position: a.position}).eq('id', b.id);
+        const id2 = (up || dn).dataset.bpUp || (up || dn).dataset.bpDown, g = groups.find(x => x.items.some(r => r.id === id2));
+        const i = g ? g.items.findIndex(r => r.id === id2) : -1, j = up ? i - 1 : i + 1;
+        if (i < 0 || j < 0 || j >= g.items.length) return;
+        const [a, b] = [g.items[i], g.items[j]];
+        // الموضعان قد يتساويان في بيانات قديمة: نُسند موضعين مختلفين دائمًا
+        const pa = a.position === b.position ? b.position + (up ? -1 : 1) : b.position;
+        const r1 = await db.from('board_pack_items').update({position: pa}).eq('id', a.id);
+        const r2 = await db.from('board_pack_items').update({position: a.position === b.position ? a.position : a.position}).eq('id', b.id);
         if (r1.error || r2.error) return toast('تعذر تغيير الترتيب');
         dlg.close(); return openPack(id);
       }
