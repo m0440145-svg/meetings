@@ -37,7 +37,7 @@
       return `<article class="card vd-row" data-id="${esc(d.id)}"><div><div class="vd-name">${esc(d.title)}</div>
         <div class="vd-meta"><span class="badge ${d.confidentiality === 'سري للغاية' ? '' : 'warn'}">${esc(d.confidentiality)}</span><span>${esc(cm ? cm.name : 'بالأسماء فقط')}</span><span>${esc(fDate(d.created_at))}</span><span>${esc(size(d.size_bytes))}</span>${d.expires_at ? `<span>${expired ? 'منتهي' : 'ينتهي'}: ${esc(fDate(d.expires_at))}</span>` : ''}</div>
         ${d.description ? `<div class="vd-meta" style="margin-top:4px">${esc(d.description)}</div>` : ''}</div>
-        <div class="vd-acts"><button type="button" class="btn primary small" data-vd-open>عرض</button>${me.admin ? '<button type="button" class="btn ghost small" data-vd-access>الصلاحيات</button><button type="button" class="btn ghost small" data-vd-log>سجل الوصول</button><button type="button" class="btn ghost small" data-vd-del>حذف</button>' : ''}</div></article>`;
+        <div class="vd-acts"><button type="button" class="btn primary small" data-vd-open>عرض</button>${me.admin ? `<button type="button" class="btn ghost small" data-vd-access>الصلاحيات</button><button type="button" class="btn ghost small" data-vd-dl aria-pressed="${d.allow_download ? 'true' : 'false'}">التنزيل: ${d.allow_download ? 'مسموح' : 'ممنوع'}</button><button type="button" class="btn ghost small" data-vd-log>سجل الوصول</button><button type="button" class="btn ghost small" data-vd-del>حذف</button>` : ''}</div></article>`;
     }).join('') || `<div class="card">${me.admin ? 'لا مستندات بعد. اضغط «رفع مستند سري».' : 'لا مستندات متاحة لك في غرفة البيانات.'}</div>`;
   }
 
@@ -51,9 +51,9 @@
   }
 
   async function view(id) {
-    const d = docs.find(x => x.id === id); if (!d) return;
     const {data: o, error} = await db.rpc('vdr_open', {p_doc: id});
     if (error) return toast(error.message || 'تعذر فتح المستند');
+    const d = {title: docs.find(x => x.id === id)?.title || o.file_name || 'مستند'};
     const s = await db.storage.from('vdr-files').createSignedUrl(o.path, 60);
     if (s.error || !s.data?.signedUrl) return toast('تعذر تحميل المستند');
     let url;
@@ -61,12 +61,20 @@
     catch { return toast('تعذر تحميل المستند'); }
     const dlg = document.createElement('dialog'); dlg.className = 'vd-view'; dlg.setAttribute('aria-label', d.title);
     const marks = Array.from({length: 36}, () => `<span>${esc(o.watermark)}</span>`).join('');
-    dlg.innerHTML = `<div class="vd-vhead"><strong>${esc(d.title)}</strong><span>${esc(o.watermark)}</span><button type="button" class="btn ghost small" data-x>إغلاق</button></div>
+    dlg.innerHTML = `<div class="vd-vhead"><strong>${esc(d.title)}</strong><span>${esc(o.watermark)}</span>${o.allow_download ? '<button type="button" class="btn ghost small" data-dl>تنزيل</button>' : ''}<button type="button" class="btn ghost small" data-x>إغلاق</button></div>
       <div class="vd-stage">${o.mime === 'application/pdf' ? `<iframe title="${esc(d.title)}" src="${url}#toolbar=0&navpanes=0"></iframe>` : `<img alt="${esc(d.title)}" src="${url}" />`}<div class="vd-wm" aria-hidden="true">${marks}</div></div>`;
     const done = () => { URL.revokeObjectURL(url); dlg.remove(); };
     dlg.addEventListener('close', done);
     dlg.addEventListener('contextmenu', e => e.preventDefault());
     dlg.querySelector('[data-x]').addEventListener('click', () => dlg.close());
+    dlg.querySelector('[data-dl]')?.addEventListener('click', async () => { // تنزيل مسموح من المدير لهذا المستند: يُسجَّل في سجل الوصول
+      const p = await db.rpc('vdr_download', {p_doc: id});
+      if (p.error) return toast(p.error.message || 'التنزيل غير مسموح');
+      const ext = (p.data.match(/\.[A-Za-z0-9]{1,8}$/) || [''])[0];
+      const s2 = await db.storage.from('vdr-files').createSignedUrl(p.data, 60, {download: d.title + ext});
+      if (s2.error || !s2.data?.signedUrl) return toast('تعذر تجهيز التنزيل');
+      const a = document.createElement('a'); a.href = s2.data.signedUrl; a.rel = 'noopener'; document.body.append(a); a.click(); a.remove();
+    });
     document.body.append(dlg); dlg.showModal();
   }
 
@@ -103,6 +111,15 @@
         await load();
       }
     });
+  }
+
+  async function toggleDownload(id) {
+    const d = docs.find(x => x.id === id); if (!d) return;
+    const next = !d.allow_download;
+    if (next && !window.confirm(`السماح بتنزيل «${d.title}»؟ يستطيع كل من يحق له الاطلاع حفظ نسخة منه خارج المنصة، ويُسجَّل كل تنزيل.`)) return;
+    const {error} = await db.rpc('vdr_set_download', {p_doc: id, p_allow: next});
+    if (error) return toast(error.message || 'تعذر تغيير الإعداد (الترحيل 028 مطلوب)');
+    toast(next ? 'سُمح بالتنزيل لهذا المستند' : 'مُنع التنزيل لهذا المستند'); await load();
   }
 
   async function access(id) {
@@ -167,6 +184,7 @@
       const id = row.dataset.id;
       if (e.target.closest('[data-vd-open]')) view(id);
       else if (e.target.closest('[data-vd-access]')) access(id);
+      else if (e.target.closest('[data-vd-dl]')) toggleDownload(id);
       else if (e.target.closest('[data-vd-log]')) log(id);
       else if (e.target.closest('[data-vd-del]')) remove(id);
     });
@@ -174,5 +192,6 @@
     document.documentElement.dataset.serverViews = ((document.documentElement.dataset.serverViews || '') + ' vdr').trim();
     await load();
   }
+  window.ehsanVdr = {view}; // تستخدمه «حزم المجلس» لفتح وثيقة سرية بالعارض نفسه
   start().catch(err => console.error('vdr', err));
 })();
