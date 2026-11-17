@@ -60,7 +60,7 @@
   async function loadPrefs() {
     const [pr, pf] = await Promise.all([
       db.from('notification_preferences').select('*').eq('user_id', me.uid).maybeSingle(),
-      db.from('profiles').select('phone').eq('id', me.uid).maybeSingle()
+      db.rpc('profile_contacts').then(r => ({data: (r.data || []).find(c => c.id === me.uid) || null, error: r.error}))
     ]);
     if (pr.error) return failed('تفضيلات التنبيه', pr.error);
     const p = pr.data || {email: true, whatsapp: true, sms: true};

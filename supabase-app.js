@@ -27,7 +27,10 @@
   const goTo = v => window.ehsanActivateView ? window.ehsanActivateView(v) : window.showView?.(v);
 
   async function session() { return (await db.auth.getSession()).data.session; }
-  async function profile(userId) { const {data} = await db.from('profiles').select('*').eq('id', userId).single(); return data; }
+  const PROFILE_COLS = 'id,full_name,job_title,organization,role,is_active,created_at,role_code,is_manual,approval_status';
+  // الجوال والبريد لا يُقرآن من الجدول مباشرة (الترحيل 038)؛ تُدمج من profile_contacts() للمالك/المدير
+  async function withContacts(rows) { const list = Array.isArray(rows) ? rows : (rows ? [rows] : []); if (!list.length) return rows; const {data} = await db.rpc('profile_contacts'); const m = new Map((data || []).map(c => [c.id, c])); list.forEach(p => { const c = m.get(p.id); if (c) { p.phone = c.phone; p.email = c.email; } }); return rows; }
+  async function profile(userId) { const {data} = await db.from('profiles').select(PROFILE_COLS).eq('id', userId).single(); return withContacts(data); }
 
   // رسائل Supabase تصل بالإنجليزية؛ نترجم الشائع منها ونشرح سببه للمستخدم
   function authError(error) {
@@ -146,9 +149,9 @@
 
   let profiles = [];
   async function loadProfiles() {
-    const {data, error} = await db.from('profiles').select('*').order('created_at');
+    const {data, error} = await db.from('profiles').select(PROFILE_COLS).order('created_at');
     if (error) return loadFailed('الأعضاء', error);
-    profiles = data || [];
+    profiles = await withContacts(data || []);
     setText('#statMembers', profiles.length);
     let bodies = [], links = [];
     try {
