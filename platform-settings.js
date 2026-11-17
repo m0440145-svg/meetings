@@ -170,7 +170,7 @@
   }
 
   async function reset() {
-    if (!confirm('حذف كل البيانات المخصصة والعودة للنصوص الافتراضية؟')) return;
+    if (!await window.ehsanConfirm('حذف كل البيانات المخصصة والعودة للنصوص الافتراضية؟')) return;
     const {error} = await db.from('platform_settings').delete().in('key', ALL_KEYS);
     if (error) return toast('تعذر الاستعادة: ' + error.message);
     settings = {}; writeCache({});

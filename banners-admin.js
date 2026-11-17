@@ -83,7 +83,7 @@
     await busy(t, async () => {
       let r;
       if (t.classList.contains('banner-toggle')) r = await db.from('platform_banners').update({is_active: !b.is_active}).eq('id', b.id);
-      else { if (!confirm('حذف هذا الإعلان نهائيًا؟')) return; r = await db.from('platform_banners').delete().eq('id', b.id); }
+      else { if (!await window.ehsanConfirm('حذف هذا الإعلان نهائيًا؟')) return; r = await db.from('platform_banners').delete().eq('id', b.id); }
       if (r.error) return toast(r.error.message);
       load();
     });

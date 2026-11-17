@@ -208,7 +208,7 @@
       await busy(t, async () => {
         const id = t.dataset.id, st = t.dataset.status;
         if (t.classList.contains('vol-delete')) {
-          if (!confirm('حذف هذا التسجيل؟')) return;
+          if (!await window.ehsanConfirm('حذف هذا التسجيل؟')) return;
           const {error} = await db.from('volunteer_hours').delete().eq('id', id);
           return error ? toast(error.message) : loadVolunteer();
         }

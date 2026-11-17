@@ -76,9 +76,9 @@
     const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
     const mid = e.target.closest('[data-id]')?.dataset.id, m = members.find(x => x.id === mid);
     if (act === 'm-new') return memberForm(); if (act === 'm-edit') return memberForm(m); if (act === 'm-bulk') return bulkForm();
-    if (act === 'm-del') { if (window.confirm(`حذف «${m.full_name}»؟ تُحذف حضوره وتوكيلاته أيضًا.`)) run(db.from('ga_members').delete().eq('id', m.id), 'تم الحذف'); return; }
+    if (act === 'm-del') { if (await window.ehsanConfirm(`حذف «${m.full_name}»؟ تُحذف حضوره وتوكيلاته أيضًا.`)) run(db.from('ga_members').delete().eq('id', m.id), 'تم الحذف'); return; }
     if (act === 'px-new') return proxyForm();
-    if (act === 'px-cancel') { const id = e.target.closest('[data-pid]').dataset.pid; if (window.confirm('إلغاء التوكيل؟')) run(db.rpc('ga_proxy_cancel', {p_id: id}), 'أُلغي التوكيل', true); return; }
+    if (act === 'px-cancel') { const id = e.target.closest('[data-pid]').dataset.pid; if (await window.ehsanConfirm('إلغاء التوكيل؟')) run(db.rpc('ga_proxy_cancel', {p_id: id}), 'أُلغي التوكيل', true); return; }
     if (act === 'att-toggle') { const id = e.target.closest('[data-mid]').dataset.mid, on = att.some(a => a.member_id === id);
       return run(on ? db.from('ga_attendance').delete().eq('meeting_id', meetingId).eq('member_id', id) : db.from('ga_attendance').insert({meeting_id: meetingId, member_id: id}), '', true); }
     if (act === 'set-save') { const body = {updated_by: me.uid, updated_at: new Date().toISOString()}; document.querySelectorAll('#gaBody [data-k]').forEach(i => { body[i.dataset.k] = num(i.value); });

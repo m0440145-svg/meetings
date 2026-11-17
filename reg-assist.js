@@ -75,7 +75,7 @@
     dlg.querySelector('[data-x]').onclick = () => dlg.close();
     dlg.querySelector('#raSave').onclick = async () => {
       const rep = dlg.querySelector('#raRep').checked;
-      if (rep && !window.confirm('سيُحذف ما أُدخل سابقًا من مواد هذا النظام ويُستبدل. متابعة؟')) return;
+      if (rep && !await window.ehsanConfirm('سيُحذف ما أُدخل سابقًا من مواد هذا النظام ويُستبدل. متابعة؟')) return;
       const {data, error} = await db.rpc('regulation_import', {p_regulation: dlg.querySelector('#raRegSel2').value, p_articles: parsed, p_replace: rep});
       if (error) return toast(error.message || 'تعذر الحفظ');
       toast(`أُدخلت ${data} مادة`); dlg.close(); load();

@@ -116,7 +116,7 @@
   async function toggleDownload(id) {
     const d = docs.find(x => x.id === id); if (!d) return;
     const next = !d.allow_download;
-    if (next && !window.confirm(`السماح بتنزيل «${d.title}»؟ يستطيع كل من يحق له الاطلاع حفظ نسخة منه خارج المنصة، ويُسجَّل كل تنزيل.`)) return;
+    if (next && !await window.ehsanConfirm(`السماح بتنزيل «${d.title}»؟ يستطيع كل من يحق له الاطلاع حفظ نسخة منه خارج المنصة، ويُسجَّل كل تنزيل.`)) return;
     const {error} = await db.rpc('vdr_set_download', {p_doc: id, p_allow: next});
     if (error) return toast(error.message || 'تعذر تغيير الإعداد (الترحيل 028 مطلوب)');
     toast(next ? 'سُمح بالتنزيل لهذا المستند' : 'مُنع التنزيل لهذا المستند'); await load();
@@ -154,7 +154,7 @@
 
   async function remove(id) {
     const d = docs.find(x => x.id === id); if (!d) return;
-    if (!window.confirm(`حذف «${d.title}» نهائيًا من غرفة البيانات؟ يبقى أثره في سجل الوصول.`)) return;
+    if (!await window.ehsanConfirm(`حذف «${d.title}» نهائيًا من غرفة البيانات؟ يبقى أثره في سجل الوصول.`)) return;
     await db.rpc('vdr_log', {p_doc: id, p_action: 'delete'});
     const r = await db.storage.from('vdr-files').remove([d.storage_path]);
     if (r.error) return toast('تعذر حذف الملف: ' + r.error.message);

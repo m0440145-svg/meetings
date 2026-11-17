@@ -65,12 +65,12 @@
     }
     await busy(b, async () => {
       if (b.classList.contains('el-withdraw')) {
-        if (!confirm('سحب الترشح؟')) return;
+        if (!await window.ehsanConfirm('سحب الترشح؟')) return;
         const {error} = await db.from('election_candidates').update({status: 'منسحب'}).eq('id', id);
         return error ? toast(error.message) : loadElections();
       }
       if (b.classList.contains('el-advance')) {
-        if (!confirm(b.dataset.confirm)) return;
+        if (!await window.ehsanConfirm(b.dataset.confirm)) return;
         const {error} = await db.rpc('advance_election', {p_election: id});
         return error ? toast(error.message) : loadElections();
       }
@@ -79,7 +79,7 @@
       const seats = Number(box.querySelector('.el-choices')?.dataset.seats) || 1;
       if (!picked.length) return toast('اختر مرشحًا واحدًا على الأقل');
       if (picked.length > seats) return toast(`الحد الأقصى ${seats} مرشحين`);
-      if (!confirm('تأكيد التصويت؟ لا يمكن تغييره بعد الإرسال.')) return;
+      if (!await window.ehsanConfirm('تأكيد التصويت؟ لا يمكن تغييره بعد الإرسال.')) return;
       const {error} = await db.rpc('cast_election_vote', {p_election: id, p_candidates: picked});
       if (error) return toast(error.message);
       toast('تم تسجيل صوتك'); loadElections();
@@ -165,7 +165,7 @@
     const b = e.target.closest('.reg-edit, .reg-del');
     if (!b) return;
     if (b.classList.contains('reg-edit')) return openRegForm(regs.find(r => r.id === b.dataset.id));
-    if (!confirm('حذف هذا النظام نهائيًا؟')) return;
+    if (!await window.ehsanConfirm('حذف هذا النظام نهائيًا؟')) return;
     await busy(b, async () => {
       const {error} = await db.from('regulations').delete().eq('id', b.dataset.id);
       return error ? toast(error.message) : loadRegs();

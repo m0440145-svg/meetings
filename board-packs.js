@@ -115,7 +115,7 @@
         if (r1.error || r2.error) return toast('تعذر تغيير الترتيب');
         dlg.close(); return openPack(id);
       }
-      if (rm) { if (!window.confirm('إزالة العنصر من الحزمة؟ لا يُحذف الملف نفسه.')) return; const r = await db.from('board_pack_items').delete().eq('id', rm.dataset.bpRm); if (r.error) return toast('تعذر الإزالة'); dlg.close(); return openPack(id); }
+      if (rm) { if (!await window.ehsanConfirm('إزالة العنصر من الحزمة؟ لا يُحذف الملف نفسه.')) return; const r = await db.from('board_pack_items').delete().eq('id', rm.dataset.bpRm); if (r.error) return toast('تعذر الإزالة'); dlg.close(); return openPack(id); }
     });
   }
 
@@ -164,7 +164,7 @@
 
   async function publish(p) {
     const on = p.status !== 'منشورة';
-    if (on && !window.confirm(`نشر «${p.title}»؟ يُشعَر أعضاء لجنة الاجتماع والمدعوون.`)) return;
+    if (on && !await window.ehsanConfirm(`نشر «${p.title}»؟ يُشعَر أعضاء لجنة الاجتماع والمدعوون.`)) return;
     const {error} = await db.rpc('board_pack_publish', {p_pack: p.id, p_publish: on});
     if (error) return toast(error.message || 'تعذر التنفيذ');
     toast(on ? 'نُشرت الحزمة وأُشعر الأعضاء' : 'سُحب النشر'); await load();
@@ -188,12 +188,12 @@
     if (probe.error) { document.querySelectorAll('[data-view="board-packs"]').forEach(b => { b.hidden = true; }); return; } // الترحيل 028 غير مطبّق
     if (!build()) return;
     document.getElementById('bpNew')?.addEventListener('click', createPack);
-    document.getElementById('bpList').addEventListener('click', e => {
+    document.getElementById('bpList').addEventListener('click', async e => {
       const row = e.target.closest('.bp-row'); if (!row) return;
       const p = packs.find(x => x.id === row.dataset.id); if (!p) return;
       if (e.target.closest('[data-bp-open]')) openPack(p.id);
       else if (e.target.closest('[data-bp-pub]')) publish(p);
-      else if (e.target.closest('[data-bp-del]')) { if (window.confirm(`حذف الحزمة «${p.title}»؟ لا تُحذف الملفات نفسها.`)) db.from('board_packs').delete().eq('id', p.id).then(r => { if (r.error) toast('تعذر الحذف'); else { toast('حُذفت الحزمة'); load(); } }); }
+      else if (e.target.closest('[data-bp-del]')) { if (await window.ehsanConfirm(`حذف الحزمة «${p.title}»؟ لا تُحذف الملفات نفسها.`)) db.from('board_packs').delete().eq('id', p.id).then(r => { if (r.error) toast('تعذر الحذف'); else { toast('حُذفت الحزمة'); load(); } }); }
     });
     onOpen({'board-packs': load});
     await load();

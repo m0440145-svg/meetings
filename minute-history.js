@@ -78,7 +78,7 @@ html[data-theme=dark] .mh-pend{background:#3a2a12;color:#f1c47a}
       const b = e.target.closest('[data-ap]'); if (!b) return;
       const approve = b.dataset.ap === '1'; let note = null;
       if (!approve) { note = window.prompt('سبب الرفض'); if (!note) return; }
-      else if (!window.confirm('تطبيق التعديل على المحضر المعتمد؟ يُحفظ الإصدار السابق في السجل.')) return;
+      else if (!await window.ehsanConfirm('تطبيق التعديل على المحضر المعتمد؟ يُحفظ الإصدار السابق في السجل.')) return;
       const {error} = await db.rpc('minute_amend_decide', {p_id: b.dataset.id, p_approve: approve, p_note: note});
       if (error) return toast(error.message || 'تعذر تنفيذ القرار');
       toast(approve ? 'طُبّق التعديل وسُجّل إصدار جديد' : 'رُفض الطلب'); dlg.close(); await refresh(); history(minuteId);
