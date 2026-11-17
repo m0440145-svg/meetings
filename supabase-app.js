@@ -89,7 +89,7 @@
       if (error) return msg(authError(error));
       // عند تفعيل حماية تعداد الحسابات يعيد Supabase مستخدمًا بلا هويات إذا كان البريد مسجلًا مسبقًا
       if (data?.user && !data.user.identities?.length) return msg(authError({message: 'User already registered'}));
-      msg(data?.session ? 'تم إنشاء الحساب.' : 'تم إنشاء الحساب. افتح رسالة التأكيد في بريدك ثم سجّل الدخول.');
+      msg(data?.session ? 'تم إنشاء الحساب.' : 'تم إنشاء الحساب. افتح رسالة التأكيد في بريدك لتأكيد بريدك، ثم يراجع مدير المنصة طلبك ويحدد صلاحياتك وتصلك رسالة عند الموافقة.');
       if (data?.session) location.reload();
     });
     q('#resetToggle').onclick = () => mode('reset', `<label>البريد الإلكتروني<input name="email" type="email" required></label><button class="btn primary" type="submit">إرسال رابط إعادة التعيين</button>`, async f => {
