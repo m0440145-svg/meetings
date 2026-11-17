@@ -57,7 +57,7 @@
     // القرارات والتوصيات بترقيم المحاور
     const sug = (ctx.suggestions || []).filter(s => s.status === 'معتمد' || s.status === 'محوّل');
     const closedVotes = (ctx.votes || []).filter(v => v.result);
-    const voteLine = v => { const r = v.result || {}; return `التصويت على «${v.question}»: موافق ${r.approve ?? 0}، غير موافق ${r.reject ?? 0}، ممتنع ${r.abstain ?? 0} — ${r.quorum_met ? 'اكتمل النصاب' : 'لم يكتمل النصاب'}`; };
+    const voteLine = v => { const r = v.result || {}; const why = (v.reasons || []).length ? ` (أسباب الامتناع: ${v.reasons.map(a => (a.voter ? a.voter + ': ' : '') + a.reason).join('؛ ')})` : ''; return `التصويت على «${v.question}»: موافق ${r.approve ?? 0}، غير موافق ${r.reject ?? 0}، ممتنع ${r.abstain ?? 0}${why} — ${r.quorum_met ? 'اكتمل النصاب' : 'لم يكتمل النصاب'}`; };
     L.push('قرارات وتوصيات الاجتماع');
     (ctx.agenda || []).forEach(a => {
       const lines = [];
@@ -90,8 +90,10 @@
     const [sg, dc, vt] = await Promise.all([
       minuteIds.length ? db.from('ai_suggestions').select('kind,title,agenda_ref,status').in('minute_id', minuteIds).in('status', ['معتمد', 'محوّل']) : {data: []},
       db.from('decisions').select('title,agenda_item_id,record_type,status').eq('meeting_id', meetingId).neq('status', 'cancelled'),
-      db.from('votes').select('question,agenda_item_id,result,status').eq('meeting_id', meetingId).eq('status', 'مغلق')
+      db.from('votes').select('id,question,agenda_item_id,result,status').eq('meeting_id', meetingId).eq('status', 'مغلق')
     ]);
+    // أسباب الامتناع (الترحيل 042): للمدير/المنشئ فقط، وتتجاهل الأخطاء إن لم يكن الترحيل مطبّقًا
+    await Promise.all((vt.error ? [] : (vt.data || [])).map(async v => { const r = await db.rpc('vote_abstain_reasons', {p_vote: v.id}); v.reasons = r.error ? [] : (r.data || []); }));
     return {
       existing: mn.data || [],
       ctx: {meeting: m.data, agenda: ag.data || [], members: (mem.data || []).map(x => ({name: name.get(x.user_id) || '—', role: x.committee_role})),
