@@ -171,7 +171,14 @@
       if (!meeting_id) return toast('اختر الاجتماع');
       const u = await U(d); if (!u) return toast(SESSION_MSG);
       const status = $('#attendanceStatus')?.value || 'حاضر';
-      const {error} = await d.from('meeting_attendees').upsert({meeting_id, user_id: u.id, attendance_status: status, attended_at: new Date().toISOString()});
+      // العضو العادي يسجّل لنفسه عبر attendance_self (نافذة زمنية، الترحيل 041)؛ المدير/أمين السر يسجّل مباشرة كما كان. إن لم يكن الترحيل مطبّقًا يُستخدم المسار القديم.
+      const isAdm = (await d.rpc('is_admin')).data === true;
+      let error = null;
+      if (isAdm) ({error} = await d.from('meeting_attendees').upsert({meeting_id, user_id: u.id, attendance_status: status, attended_at: new Date().toISOString()}));
+      else {
+        const r = await d.rpc('attendance_self', {p_meeting: meeting_id, p_status: status});
+        error = r.error && /Could not find the function|PGRST202/i.test(r.error.message + (r.error.code || '')) ? (await d.from('meeting_attendees').upsert({meeting_id, user_id: u.id, attendance_status: status, attended_at: new Date().toISOString()})).error : r.error;
+      }
       if (error) return toast(error.message);
       toast('تم تسجيل الحالة');
     });
