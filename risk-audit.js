@@ -11,7 +11,9 @@
   const today = () => new Date().toISOString().slice(0, 10);
   const lvl = s => s >= 15 ? ['عالية', 'bad'] : s >= 8 ? ['متوسطة', 'warn'] : ['منخفضة', 'good'];
   const ownerField = v => ({name: 'owner_id', label: 'المسؤول', type: 'select', options: [{value: '', label: '— غير محدد —'}, ...people.map(p => ({value: p.id, label: p.full_name || 'عضو'}))], value: v || ''});
-  const clean = o => { const r = {}; for (const k in o) r[k] = o[k] === '' ? null : o[k]; return r; };
+  // الفارغ يصير null للمرجع والتواريخ فقط؛ النصوص الفارغة تبقى '' لأن أعمدتها NOT NULL
+  const NULLABLE = new Set(['owner_id', 'lead_id', 'review_due', 'planned_date', 'next_due', 'due_date']);
+  const clean = o => { const r = {}; for (const k in o) r[k] = o[k] === '' && NULLABLE.has(k) ? null : o[k] ?? (NULLABLE.has(k) ? null : ''); return r; };
 
   async function load() {
     const q = t => db.from(t).select('*').limit(2000);
