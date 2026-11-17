@@ -40,8 +40,14 @@
       const mine = t.my_voted ? `<div class="meta">${secret ? 'تم تسجيل مشاركتك (الاختيار سري)' : 'صوتك: ' + esc(t.my_choice || '')}</div>` : '';
       const buttons = closed ? '<span class="tag">مغلق</span>' : t.my_voted ? '' : ['موافق', 'غير موافق', 'ممتنع'].map((c, k) => `<button class="btn small ${k ? 'ghost' : 'primary'} db-vote" data-id="${x.id}" data-choice="${c}">${c}</button>`).join('');
       const close = !closed && t.can_close ? `<button class="btn small ghost close-vote" data-id="${x.id}">إغلاق التصويت</button>` : '';
-      return `<article><h3>${esc(x.question)}</h3><div class="meta">النوع: ${esc(x.vote_type)} • النصاب المطلوب: ${x.quorum_required || '—'} • المشاركون: ${t.voted ?? 0}${quorum}</div><p>${res}</p>${mine}<div class="form-actions">${buttons}${close}</div></article>`;
+      return `<article data-vote="${x.id}"><h3>${esc(x.question)}</h3><div class="meta">النوع: ${esc(x.vote_type)} • النصاب المطلوب: ${x.quorum_required || '—'} • المشاركون: ${t.voted ?? 0}${quorum}</div><p>${res}</p>${mine}<div class="vote-reasons" data-reasons="${t.can_close && t.abstain > 0 ? '1' : ''}"></div><div class="form-actions">${buttons}${close}</div></article>`;
     }).join('') || '<article>لا توجد تصويتات.</article>';
+    // أسباب الامتناع لمن يملك صلاحية الإغلاق (المدير/المنشئ)
+    document.querySelectorAll('#votesList [data-reasons="1"]').forEach(async box => {
+      const r = await d.rpc('vote_abstain_reasons', {p_vote: box.closest('[data-vote]').dataset.vote});
+      if (r.error || !r.data?.length) return;
+      box.innerHTML = '<div class="meta"><b>أسباب الامتناع:</b></div>' + r.data.map(a => `<div class="meta">• ${a.voter ? esc(a.voter) + ': ' : ''}${esc(a.reason)}</div>`).join('');
+    });
     if ($('#minutesList')) $('#minutesList').innerHTML = (m.data || []).map(x => {
       const n = (x.signatures || []).length, need = x.required_signatures || 1, approved = x.status === 'معتمد';
       const sign = approved ? '' : `<button class="btn small primary sign-minute" data-id="${x.id}">توقيع المحضر</button>`;
@@ -118,8 +124,19 @@
       let b = e.target.closest('.db-vote');
       if (b) {
         if (b.disabled) return;
+        // الامتناع يتطلب بيان السبب (الترحيل 042): ينسب للعضو في العلني، ويبقى بلا هوية في السري
+        let reason = null;
+        if (b.dataset.choice === 'ممتنع') {
+          const secret = /سري/.test(b.closest('article')?.querySelector('.meta')?.textContent || '');
+          if (window.DM?.form) {
+            let ok = false;
+            await window.DM.form({title: 'سبب الامتناع', submit: 'تسجيل الامتناع', intro: secret ? 'تصويت سري: يُحفظ السبب دون اسمك.' : 'يُسجَّل السبب مع اسمك في هذا التصويت العلني.', fields: [{name: 'reason', label: 'سبب الامتناع', type: 'textarea', required: true, minlength: 3, maxlength: 1000, rows: 3}], onSubmit: v => { reason = v.reason; ok = true; }});
+            if (!ok) return;
+          } else { reason = (window.prompt('اكتب سبب الامتناع') || '').trim(); if (reason.length < 3) return toast('اكتب سبب الامتناع'); }
+        }
         b.disabled = true; // الصوت لا يتغير بعد تسجيله؛ نمنع النقر المزدوج
-        const {error} = await d.rpc('cast_vote', {p_vote: b.dataset.id, p_choice: b.dataset.choice});
+        let {error} = await d.rpc('cast_vote', reason ? {p_vote: b.dataset.id, p_choice: b.dataset.choice, p_reason: reason} : {p_vote: b.dataset.id, p_choice: b.dataset.choice});
+        if (error && reason && /Could not find the function|PGRST202/i.test(error.message + (error.code || ''))) ({error} = await d.rpc('cast_vote', {p_vote: b.dataset.id, p_choice: b.dataset.choice})); // الترحيل 042 غير مطبّق
         if (error) { b.disabled = false; return toast(error.message); }
         toast('تم توثيق صوتك');
         load(d);
