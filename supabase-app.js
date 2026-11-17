@@ -133,7 +133,7 @@
     if (btn) {
       btn.innerHTML = `<span class="avatar">${esc((p?.full_name || s.user.email)[0])}</span><span>${esc(p?.full_name || s.user.email)}</span>`;
       btn.title = 'انقر لتسجيل الخروج';
-      btn.onclick = async () => { if (!window.confirm('تسجيل الخروج من المنصة؟')) return; await db.auth.signOut(); location.reload(); };
+      btn.onclick = async () => { if (window.ehsanLogout) return window.ehsanLogout(); await db.auth.signOut(); location.reload(); };
     }
     return true;
   }
