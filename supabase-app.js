@@ -203,7 +203,10 @@ html[data-theme=dark] .mb-stack i{border-color:#2b2521}`;
       ms.forEach(l => linked.add(l.user_id));
       return {key: b.id, title: b.name, type: b.type, color: colorOf(b.id), members: ms.map(l => ({p: byId.get(l.user_id), role: l.committee_role}))};
     });
-    const rest = profiles.filter(p => !linked.has(p.id));
+    // العضو العادي يرى لجانه فقط: لا «أعضاء بدون جهة» ولا إحصاءات الجميع (يفرض ذلك الخادم أيضًا بسياسات committees/committee_members)
+    const isAdm = (await db.rpc('is_admin')).data === true;
+    const rest = isAdm ? profiles.filter(p => !linked.has(p.id)) : [];
+    if (!isAdm) { const seen = new Set(); gdata.forEach(g => g.members.forEach(m => seen.add(m.p.id))); profiles = profiles.filter(p => seen.has(p.id)); }
     if (rest.length) gdata.push({key: '__none', title: 'أعضاء بدون جهة', type: '', color: '#afa5a2', members: rest.map(p => ({p, role: ''}))});
     window.__mmData = {groups: gdata, card: memberCard, profiles};
     if (window.__mmSel && !gdata.some(g => g.key === window.__mmSel)) window.__mmSel = null;
@@ -213,7 +216,7 @@ html[data-theme=dark] .mb-stack i{border-color:#2b2521}`;
       <span class="mb-count"><b>${g.members.length}</b>عضو</span>
       <span class="mb-stack" aria-hidden="true">${g.members.slice(0, 4).map(m => `<i>${esc((m.p.full_name || 'ع')[0])}</i>`).join('')}${g.members.length > 4 ? `<i class="more">+${g.members.length - 4}</i>` : ''}</span></button>`;
     const manual = profiles.filter(p => p.is_manual).length;
-    setHtml('#membersGrid', `<div class="mb-wrap"><div class="mb-stats"><span><b>${profiles.length}</b>إجمالي الأعضاء</span><span><b>${bodies.length}</b>جهة</span><span><b>${manual}</b>مضاف يدويًا</span></div>
+    setHtml('#membersGrid', `<div class="mb-wrap">${isAdm ? `<div class="mb-stats"><span><b>${profiles.length}</b>إجمالي الأعضاء</span><span><b>${bodies.length}</b>جهة</span><span><b>${manual}</b>مضاف يدويًا</span></div>` : ''}
       <div class="mb-tools"><input type="search" id="mbSearch" placeholder="ابحث باسم عضو أو جوال أو بريد…" aria-label="بحث في الأعضاء" autocomplete="off"></div>
       <div class="mb-grid">${gdata.map(tile).join('')}</div><div id="mbPanel"></div></div>`);
     renderMbPanel();
@@ -239,7 +242,7 @@ html[data-theme=dark] .mb-stack i{border-color:#2b2521}`;
       box.innerHTML = `<section class="mb-panel" style="--gc:${g.color}"><div class="mb-panel-head"><h3>${esc(g.title)} ${g.type ? `<span class="status-pill">${esc(g.type)}</span>` : ''} <span class="meta">(${g.members.length} عضو)</span></h3><button type="button" class="btn small ghost" data-mb-close>إغلاق</button></div>
         ${g.members.length ? `<div class="cards-grid">${g.members.map(m => d.card(m.p, m.role)).join('')}</div>` : '<p class="mb-empty">لا يوجد أعضاء في هذه الجهة بعد. أضفهم من «استيراد من Excel» أو «إضافة عضو يدويًا».</p>'}</section>`;
     }
-    function memberCard(x, role) { return `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(role || x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}${x.is_manual ? ' • <span class="status-pill">مضاف يدويًا</span>' : ''}</div>${x.is_manual ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-member="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-del-member="${esc(x.id)}">حذف</button></div>` : ''}</article>`; }
+    function memberCard(x, role) { return `<article><div class="member-head"><div class="member-avatar">${esc((x.full_name || 'ع')[0])}</div><div><strong>${esc(x.full_name || 'عضو')}</strong><div class="meta">${esc(role || x.job_title || x.role)}</div></div></div><p>${esc(x.phone || '')}</p><div class="meta">الصلاحية: ${esc(x.role_code || x.role || 'member')} • ${x.is_active === false ? 'موقوف' : 'نشط'}${x.is_manual ? ' • <span class="status-pill">مضاف يدويًا</span>' : ''}</div>${x.is_manual ? `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-edit-member="${esc(x.id)}">تعديل</button> <button type="button" class="btn small ghost" data-del-member="${esc(x.id)}">حذف</button></div>` : `<div class="mm-admin-only member-acts"><button type="button" class="btn small ghost" data-access-member="${esc(x.id)}" data-name="${esc(x.full_name || '')}">الصلاحيات</button></div>`}</article>`; }
     window.ehsanMembers = {profiles: profiles.slice(), reload: () => loadProfiles()};
     setHtml('#taskAssignee', profiles.map(x => `<option value="${x.id}">${esc(x.full_name || 'عضو')}</option>`).join(''));
   }
