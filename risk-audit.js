@@ -112,7 +112,7 @@
     dlg.addEventListener('click', async e => {
       const aid = e.target.closest('[data-aid]')?.dataset.aid, a = D.actions.find(x => x.id === aid);
       if (e.target.closest('[data-tg]') && a) { const {error} = await db.from('risk_actions').update({status: a.status === 'منجز' ? 'مفتوح' : 'منجز'}).eq('id', aid); if (error) return toast('تعذر التنفيذ'); rerender(); }
-      else if (e.target.closest('[data-rm]') && a && window.confirm('حذف الإجراء؟')) { const {error} = await db.from('risk_actions').delete().eq('id', aid); if (error) return toast('تعذر الحذف'); rerender(); }
+      else if (e.target.closest('[data-rm]') && a && await window.ehsanConfirm('حذف الإجراء؟')) { const {error} = await db.from('risk_actions').delete().eq('id', aid); if (error) return toast('تعذر الحذف'); rerender(); }
       else if (e.target.closest('[data-new]')) await window.DM.form({title: 'إجراء معالجة', submit: 'إضافة', fields: [{name: 'action', label: 'الإجراء', type: 'textarea', required: true, minlength: 3, maxlength: 1000}, ownerField(''), {name: 'due_date', label: 'الموعد', type: 'date'}],
         onSubmit: async v => { const {error} = await db.from('risk_actions').insert({risk_id: r.id, ...clean(v)}); if (error) throw new Error(error.message); toast('أُضيف الإجراء'); await rerender(); }});
     });
@@ -126,7 +126,7 @@
     dlg.addEventListener('change', async e => { const s = e.target.closest('[data-st]'); if (!s) return; const fid = s.closest('[data-fid]').dataset.fid; const {error} = await db.from('audit_findings').update({status: s.value}).eq('id', fid); if (error) return toast('تعذر التنفيذ'); rerender(); });
     dlg.addEventListener('click', async e => {
       const fid = e.target.closest('[data-fid]')?.dataset.fid;
-      if (e.target.closest('[data-rm]') && fid && window.confirm('حذف الملاحظة؟')) { const {error} = await db.from('audit_findings').delete().eq('id', fid); if (error) return toast('تعذر الحذف'); rerender(); }
+      if (e.target.closest('[data-rm]') && fid && await window.ehsanConfirm('حذف الملاحظة؟')) { const {error} = await db.from('audit_findings').delete().eq('id', fid); if (error) return toast('تعذر الحذف'); rerender(); }
       else if (e.target.closest('[data-new]')) await window.DM.form({title: 'ملاحظة تدقيق', submit: 'إضافة', wide: true, fields: [{name: 'finding', label: 'الملاحظة', type: 'textarea', required: true, minlength: 3, maxlength: 3000}, {name: 'severity', label: 'الخطورة', type: 'select', options: ['منخفضة', 'متوسطة', 'عالية'].map(v => ({value: v, label: v})), value: 'متوسطة'}, {name: 'recommendation', label: 'التوصية', type: 'textarea', maxlength: 3000}, ownerField(''), {name: 'due_date', label: 'الموعد', type: 'date'}],
         onSubmit: async v => { const {error} = await db.from('audit_findings').insert({task_id: t.id, ...clean(v)}); if (error) throw new Error(error.message); toast('أُضيفت الملاحظة'); await rerender(); }});
     });
@@ -141,7 +141,7 @@
     dialog(`سجل: ${o.title}`, (data || []).map(l => `<div class="card"><b>${esc(l.done_on)}</b>${l.note ? ' — ' + esc(l.note) : ''}</div>`).join('') || '<div>لا سجل إنجاز بعد.</div>');
   }
 
-  const del = (table, label, id) => { if (window.confirm(`حذف ${label}؟ لا يمكن التراجع.`)) db.from(table).delete().eq('id', id).then(r => { if (r.error) toast('تعذر الحذف'); else { toast('تم الحذف'); load(); } }); };
+  const del = async (table, label, id) => { if (await window.ehsanConfirm(`حذف ${label}؟ لا يمكن التراجع.`)) db.from(table).delete().eq('id', id).then(r => { if (r.error) toast('تعذر الحذف'); else { toast('تم الحذف'); load(); } }); };
 
   const CSS = `.ra-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}.ra-note{font-size:12.5px;opacity:.75}
 .ra-list{display:grid;gap:10px;margin-top:10px}.ra-row{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}

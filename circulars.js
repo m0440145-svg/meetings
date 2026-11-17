@@ -83,7 +83,7 @@
 
   async function close(id, cancel) {
     const c = rows.find(x => x.id === id); if (!c) return;
-    if (!window.confirm(cancel ? `إلغاء القرار «${c.title}»؟ لن يُحتسب.` : `إغلاق التصويت على «${c.title}» واحتساب النتيجة؟ لا يمكن التراجع.`)) return;
+    if (!await window.ehsanConfirm(cancel ? `إلغاء القرار «${c.title}»؟ لن يُحتسب.` : `إغلاق التصويت على «${c.title}» واحتساب النتيجة؟ لا يمكن التراجع.`)) return;
     const {data, error} = await db.rpc('circular_close', {p_circular: id, p_cancel: !!cancel});
     if (error) return toast(error.message || 'تعذر الإغلاق');
     toast('النتيجة: ' + data);

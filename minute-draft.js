@@ -118,7 +118,7 @@
       onSubmit: async v => {
         const {data: again} = await db.from('minutes').select('id').eq('meeting_id', id).limit(1);
         if (again?.length) throw new Error('يوجد محضر لهذا الاجتماع: عدّله من «محاضر الاجتماعات».');
-        if (/\[[^\]]{2,}\]/.test(v.content) && !window.confirm('ما زالت في النص عبارات بين [ ] لم تُستكمل. هل تحفظ المسودة كما هي؟')) throw new Error('أكمل العبارات التي بين [ ] ثم احفظ.');
+        if (/\[[^\]]{2,}\]/.test(v.content) && !await window.ehsanConfirm('ما زالت في النص عبارات بين [ ] لم تُستكمل. هل تحفظ المسودة كما هي؟')) throw new Error('أكمل العبارات التي بين [ ] ثم احفظ.');
         const r = await db.from('minutes').insert({meeting_id: id, content: v.content, recommendations: v.recs || '', created_by: me.uid});
         if (r.error) throw new Error(r.error.message);
         toast('حُفظت مسودة المحضر؛ تجدها في «محاضر الاجتماعات»');

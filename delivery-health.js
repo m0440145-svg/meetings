@@ -68,7 +68,7 @@ html[data-theme=dark] .dh-todo{background:#3a2a12;color:#f1c47a}`;
   }
 
   async function requeue() {
-    if (!window.confirm('إعادة الرسائل الفاشلة إلى الانتظار؟ لا تُمَس المرسَلة. تأكد أولًا أن سبب الفشل عولج حتى لا تفشل ثانية.')) return;
+    if (!await window.ehsanConfirm('إعادة الرسائل الفاشلة إلى الانتظار؟ لا تُمَس المرسَلة. تأكد أولًا أن سبب الفشل عولج حتى لا تفشل ثانية.')) return;
     const {data, error} = await db.rpc('delivery_requeue', {p_channel: null});
     if (error) return toast(error.message || 'تعذر التنفيذ');
     toast(`أُعيدت ${data} رسالة إلى الانتظار`); await load();

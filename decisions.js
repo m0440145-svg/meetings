@@ -224,7 +224,7 @@
     await busy(b, async () => {
       let r;
       if (b.classList.contains('df-move')) r = await db.from('tasks').update({status: b.dataset.status}).eq('id', b.dataset.id);
-      else { if (!confirm('حذف هذه المهمة؟')) return; r = await db.from('tasks').delete().eq('id', b.dataset.id); }
+      else { if (!await window.ehsanConfirm('حذف هذه المهمة؟')) return; r = await db.from('tasks').delete().eq('id', b.dataset.id); }
       if (r.error) return toast(r.error.message);
       load();
     });

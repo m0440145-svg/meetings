@@ -155,7 +155,7 @@
     }));
     await busy(f.querySelector('[type=submit]'), async () => {
       const conflicts = await findConflicts(rows);
-      if (conflicts.length && !confirm(`يوجد تعارض مع:\n${conflicts.slice(0, 6).join('\n')}${conflicts.length > 6 ? '\n…' : ''}\n\nهل تريد الجدولة رغم ذلك؟`)) return;
+      if (conflicts.length && !await window.ehsanConfirm(`يوجد تعارض مع:\n${conflicts.slice(0, 6).join('\n')}${conflicts.length > 6 ? '\n…' : ''}\n\nهل تريد الجدولة رغم ذلك؟`)) return;
       const {data, error} = await db.from('meetings').insert(rows).select('id,gregorian_date,start_time,end_time');
       if (error) return toast('تعذر حفظ الاجتماعات: ' + error.message);
       const problems = [];
@@ -206,7 +206,7 @@
     const row = {gregorian_date: v.date.value, hijri_date: fHijriFull.format(parseKey(v.date.value)), start_time: v.time.value, end_time: v.endTime.value || null};
     await busy(f.querySelector('[type=submit]'), async () => {
       const conflicts = await findConflicts([{...row, committee_id: m.committee_id, location: m.location}], id);
-      if (conflicts.length && !confirm(`يوجد تعارض مع:\n${conflicts.slice(0, 6).join('\n')}\n\nهل تريد تغيير الموعد رغم ذلك؟`)) return;
+      if (conflicts.length && !await window.ehsanConfirm(`يوجد تعارض مع:\n${conflicts.slice(0, 6).join('\n')}\n\nهل تريد تغيير الموعد رغم ذلك؟`)) return;
       const {error} = await db.from('meetings').update(row).eq('id', id);
       if (error) return toast('تعذر تغيير الموعد: ' + error.message);
       $('#schedDetail').close();

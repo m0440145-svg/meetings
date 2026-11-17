@@ -144,7 +144,7 @@
       }
       b = e.target.closest('.close-vote');
       if (b) {
-        if (b.disabled || !confirm('إغلاق التصويت واحتساب النتيجة؟ لا يمكن التراجع.')) return;
+        if (b.disabled || !await window.ehsanConfirm('إغلاق التصويت واحتساب النتيجة؟ لا يمكن التراجع.')) return;
         b.disabled = true;
         const {data, error} = await d.rpc('close_vote', {p_vote: b.dataset.id});
         if (error) { b.disabled = false; return toast(error.message); }
@@ -165,7 +165,7 @@
       }
       b = e.target.closest('.approve-minute');
       if (b) {
-        if (b.disabled || !confirm('اعتماد المحضر؟ بعد الاعتماد لا يمكن تعديله ولا إضافة توقيعات.')) return;
+        if (b.disabled || !await window.ehsanConfirm('اعتماد المحضر؟ بعد الاعتماد لا يمكن تعديله ولا إضافة توقيعات.')) return;
         b.disabled = true;
         const {error} = await d.rpc('approve_minute', {p_minute: b.dataset.id});
         if (error) { b.disabled = false; return toast(error.message); }

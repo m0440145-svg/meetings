@@ -16,7 +16,7 @@
     for(const x of data?.tasks||[]){const t=clip(x?.title,200);if(t.length>=3)it.push({kind:'مهمة',title:t,body:clip(x?.description,2000),quote:clip(x?.description||x?.title,1000),agenda_ref:'',owner_hint:'',due_hint:clip(x?.due_date,120)})}
     return it}
   async function extract(d){const id=$('#prodMinuteSelect')?.value;if(!id)return toast('اختر المحضر');const out=$('#prodAiOutput');
-    if(!window.confirm('سيُرسَل نص هذا المحضر إلى مزوّد ذكاء اصطناعي خارجي لتحليله. هل تريد المتابعة؟\n\nللتحليل دون أي إرسال خارجي استخدم «مساعد أمين السر» في قسم الحوكمة.'))return;
+    if(!await window.ehsanConfirm('سيُرسَل نص هذا المحضر إلى مزوّد ذكاء اصطناعي خارجي لتحليله. هل تريد المتابعة؟\n\nللتحليل دون أي إرسال خارجي استخدم «مساعد أمين السر» في قسم الحوكمة.'))return;
     out.textContent='جاري التحليل...';
     const {data,error}=await d.functions.invoke('ai-meeting-assistant',{body:{action:'extract',minute_id:id}});
     if(error){let detail=error.message||'';try{const b=await error.context?.json?.();if(b?.error)detail=b.error}catch{}
@@ -25,13 +25,13 @@
     out.textContent=[data?.summary?'الملخص:\n'+data.summary:'',items.length?'مقترحات مستخرجة ('+items.length+'): '+items.map(x=>'['+x.kind+'] '+x.title).join(' | '):'لم تُستخرج عناصر.',(data?.risks||[]).length?'مخاطر:\n- '+data.risks.map(r=>clip(r,300)).join('\n- '):''].filter(Boolean).join('\n\n')+'\n\nهذه النتائج لم تُحفظ بعد.';
     const old=$('#prodAiActions');if(old)old.remove();const box=document.createElement('div');box.id='prodAiActions';box.className='form-actions';
     if(items.length){const b=document.createElement('button');b.type='button';b.className='btn primary';b.textContent='إرسال إلى مراجعة أمين السر';b.onclick=async()=>{
-      if(!window.confirm('تُحفظ المقترحات بحالة «مقترح» وتُستبدل المقترحات غير المراجَعة لهذا المحضر. لا يُنشأ أي قرار أو مهمة قبل اعتمادها من أمين السر. المتابعة؟'))return;
+      if(!await window.ehsanConfirm('تُحفظ المقترحات بحالة «مقترح» وتُستبدل المقترحات غير المراجَعة لهذا المحضر. لا يُنشأ أي قرار أو مهمة قبل اعتمادها من أمين السر. المتابعة؟'))return;
       const {error:e2}=await d.rpc('ai_save_suggestions',{p_minute:id,p_items:items,p_source:'model'});
       if(e2)return toast(e2.message||'تعذر الحفظ (يتطلب مدير أو أمين سر والترحيل 016)');
       toast('حُفظت المقترحات؛ راجعها في «مساعد أمين السر»');b.disabled=true};box.append(b)}
     out.after(box)}
   async function indexMinute(d){const id=$('#prodMinuteSelect')?.value;if(!id)return toast('اختر المحضر');
-    if(!window.confirm('الفهرسة الدلالية ترسل نص المحضر إلى مزوّد ذكاء اصطناعي خارجي لتوليد تضمين، وتحفظ نسخة منه في جدول البحث. المتابعة؟'))return;
+    if(!await window.ehsanConfirm('الفهرسة الدلالية ترسل نص المحضر إلى مزوّد ذكاء اصطناعي خارجي لتوليد تضمين، وتحفظ نسخة منه في جدول البحث. المتابعة؟'))return;
     const {data:m}=await d.from('minutes').select('content,meetings(title)').eq('id',id).single();if(!m?.content)return toast('لا نص في المحضر لفهرسته');
     const {data:doc,error}=await d.from('ai_documents').insert({entity_type:'minute',entity_id:id,title:m.meetings?.title||'محضر اجتماع',content:m.content,metadata:{}}).select('id').single();
     if(error||!doc?.id)return toast(error?.message||'تعذر الحفظ');

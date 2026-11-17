@@ -55,7 +55,7 @@
       } else if (b.classList.contains('idea-status')) {
         r = await db.from('ideas').update({status: b.dataset.status}).eq('id', id);
       } else {
-        if (!confirm('حذف هذه الفكرة؟')) return;
+        if (!await window.ehsanConfirm('حذف هذه الفكرة؟')) return;
         r = await db.from('ideas').delete().eq('id', id);
       }
       if (r.error) return toast(r.error.message);
@@ -112,7 +112,7 @@
         const h = halls.find(x => x.id === b.dataset.id);
         r = await db.from('halls').update({is_active: !h.is_active}).eq('id', h.id);
       } else {
-        if (!confirm('إلغاء هذا الحجز؟')) return;
+        if (!await window.ehsanConfirm('إلغاء هذا الحجز؟')) return;
         r = await db.from('hall_bookings').update({status: 'ملغي'}).eq('id', b.dataset.id);
       }
       if (r.error) return toast(r.error.message);
