@@ -6,7 +6,8 @@
 -- 1) أعمدة: quorum_settings (الافتراضية)، committees (قاعدة اللجنة، اختيارية)، votes (قاعدة التصويت). حارس نسبة/قاعدة اللجنة للمدير فقط (يوسّع مشغّل 048).
 -- 2) approval_rule_for / vote_outcome(تصويت) [النتيجة بعد الإغلاق فقط، ولمن يرى الاجتماع، فلا تكشف جزئيات السري] / vote_rule_get / vote_set_approval_rule (المدير، والتصويت مفتوح فقط).
 -- 3) approval_settings_get / approval_settings_set للمدير مع سجل تدقيق.
--- آمن لإعادة التنفيذ. للتراجع: drop trigger if exists trg_vote_rule_snapshot on public.votes؛ drop function للدوال الجديدة؛ drop column للأعمدة؛ وأعد تعريف guard_committee_quorum من 048.
+-- 4) أقفال التكامل: trg_guard_vote_rule (القاعدة لا تتغير إلا عبر الدالة والتصويت مفتوح ولم يصل صوت)، trg_freeze_vote_counts (يثبّت أعضاء اللجنة عند الإغلاق؛ والحاضرون من result الذي تحفظه close_vote).
+-- آمن لإعادة التنفيذ. للتراجع: drop trigger if exists trg_vote_rule_snapshot, trg_guard_vote_rule, trg_freeze_vote_counts on public.votes؛ drop function للدوال الجديدة؛ drop column للأعمدة؛ وأعد تعريف guard_committee_quorum من 048.
 begin;
 
 alter table public.quorum_settings add column if not exists approval_base text not null default 'cast';
@@ -15,6 +16,7 @@ alter table public.committees add column if not exists approval_base text;
 alter table public.committees add column if not exists approval_percent numeric(5,2);
 alter table public.votes add column if not exists approval_base text;
 alter table public.votes add column if not exists approval_percent numeric(5,2);
+alter table public.votes add column if not exists members_at_close int;   -- عدد أعضاء اللجنة لحظة الإغلاق (يثبّته مشغّل)
 do $$ begin
   alter table public.quorum_settings add constraint quorum_settings_approval_chk check (approval_base in ('cast', 'voters', 'present', 'members') and approval_percent >= 1 and approval_percent <= 100);
 exception when duplicate_object then null; end $$;
@@ -56,19 +58,51 @@ create or replace function public.snapshot_vote_rule() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare r record;
 begin
-  if new.meeting_id is not null then
-    select * into r from public.approval_rule_for(new.meeting_id);
-    new.approval_base := coalesce(new.approval_base, r.base);
-    new.approval_percent := coalesce(new.approval_percent, r.percent);
-  end if;
+  if auth.uid() is not null and not public.is_admin() then new.approval_base := null; new.approval_percent := null; end if;   -- غير المدير لا يختار قاعدة
+  select * into r from public.approval_rule_for(new.meeting_id);
+  new.approval_base := coalesce(new.approval_base, r.base);
+  new.approval_percent := coalesce(new.approval_percent, r.percent);
   return new;
 end $$;
 revoke all on function public.snapshot_vote_rule() from public, anon, authenticated;
 drop trigger if exists trg_vote_rule_snapshot on public.votes;
 create trigger trg_vote_rule_snapshot before insert on public.votes for each row execute function public.snapshot_vote_rule();
 
+-- تثبيت قواعد التصويتات القائمة (قبل إنشاء مشغّل القفل): لا يتغير مصير مغلق منها بتعديل لاحق للإعدادات
+update public.votes v
+   set approval_base = coalesce(v.approval_base, (select a.base from public.approval_rule_for(v.meeting_id) a)),
+       approval_percent = coalesce(v.approval_percent, (select a.percent from public.approval_rule_for(v.meeting_id) a))
+ where v.approval_base is null or v.approval_percent is null;
+
+-- قفل القاعدة: لا تتغير إلا عبر vote_set_approval_rule (app.rpc) والتصويت مفتوح؛ ومنع كتابتها مباشرة بعد الإغلاق
+create or replace function public.guard_vote_rule() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (new.approval_base is distinct from old.approval_base or new.approval_percent is distinct from old.approval_percent)
+     and (current_setting('app.rpc', true) is distinct from 'on' or old.status is distinct from 'مفتوح') then
+    raise exception 'قاعدة الإقرار لا تُعدَّل إلا عبر الدالة المخصصة والتصويت مفتوح';
+  end if;
+  return new;
+end $$;
+revoke all on function public.guard_vote_rule() from public, anon, authenticated;
+drop trigger if exists trg_guard_vote_rule on public.votes;
+create trigger trg_guard_vote_rule before update on public.votes for each row execute function public.guard_vote_rule();
+
+-- تثبيت عدد الأعضاء لحظة الإغلاق (فلا تقلب نتيجةً مغلقة تغييراتُ عضوية اللجنة لاحقًا)
+create or replace function public.freeze_vote_counts() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.status = 'مغلق' and old.status is distinct from 'مغلق' and new.meeting_id is not null then
+    new.members_at_close := (public.quorum_state(new.meeting_id)->>'eligible')::int;
+  end if;
+  return new;
+end $$;
+revoke all on function public.freeze_vote_counts() from public, anon, authenticated;
+drop trigger if exists trg_freeze_vote_counts on public.votes;
+create trigger trg_freeze_vote_counts before update on public.votes for each row execute function public.freeze_vote_counts();
+
 -- هل للمستخدم صلة بالاجتماع (مدير، منشئ الاجتماع/التصويت، عضو لجنة، حاضر، مدعو)
-create or replace function public.can_see_meeting_quorum(p_meeting uuid, p_creator uuid) returns boolean
+create or replace function public.can_see_meeting_quorum(p_meeting uuid, p_creator uuid, p_invited boolean default true) returns boolean
 language plpgsql stable security definer set search_path = public as $$
 declare uid uuid := auth.uid(); m public.meetings%rowtype;
 begin
@@ -78,9 +112,9 @@ begin
   return public.is_admin() or m.created_by = uid or p_creator = uid
       or exists (select 1 from public.committee_members cm where cm.committee_id = m.committee_id and cm.user_id = uid)
       or exists (select 1 from public.meeting_attendees a where a.meeting_id = p_meeting and a.user_id = uid)
-      or exists (select 1 from public.meeting_invitations i where i.meeting_id = p_meeting and i.user_id = uid);
+      or (p_invited and exists (select 1 from public.meeting_invitations i where i.meeting_id = p_meeting and i.user_id = uid));
 end $$;
-revoke all on function public.can_see_meeting_quorum(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.can_see_meeting_quorum(uuid, uuid, boolean) from public, anon, authenticated;
 
 -- النتيجة النهائية (بعد الإغلاق فقط)
 create or replace function public.vote_outcome(p_vote uuid) returns jsonb
@@ -89,8 +123,8 @@ declare v public.votes%rowtype; a int; r int; ab int; b text; pct numeric; base_
 begin
   if auth.uid() is null or not public.is_approved() then raise exception 'غير مصرح' using errcode = '42501'; end if;
   select * into v from public.votes where id = p_vote;
-  if not found or v.status <> 'مغلق' then return null; end if;
-  if not public.can_see_meeting_quorum(v.meeting_id, v.created_by) then return null; end if;
+  if not found or v.status is distinct from 'مغلق' then return null; end if;
+  if not public.can_see_meeting_quorum(v.meeting_id, v.created_by, false) then return null; end if;   -- كدائرة vote_tally: بلا المدعو غير الحاضر
   select count(*) filter (where choice = 'موافق'), count(*) filter (where choice = 'غير موافق'), count(*) filter (where choice = 'ممتنع')
     into a, r, ab from public.vote_ballots where vote_id = p_vote;
   select * into rr from public.approval_rule_for(v.meeting_id);
@@ -100,8 +134,8 @@ begin
   base_n := case b
     when 'cast' then a + r
     when 'voters' then a + r + ab
-    when 'present' then (select count(*) from public.meeting_attendees x where x.meeting_id = v.meeting_id and x.attendance_status in ('حاضر', 'عن بعد'))
-    else coalesce((q->>'eligible')::int, 0) end;
+    when 'present' then coalesce((v.result->>'present')::int, (select count(*) from public.meeting_attendees x where x.meeting_id = v.meeting_id and x.attendance_status in ('حاضر', 'عن بعد')))   -- المحفوظ عند الإغلاق
+    else coalesce(v.members_at_close, (q->>'eligible')::int, 0) end;
   if b = 'members' and base_n = 0 then base_n := a + r; end if;   -- اجتماع بلا لجنة أو لجنة بلا أعضاء: يُرجَع لأصوات الموافق/غير الموافق
   req := greatest(1, ceil(base_n * pct / 100.0)::int);
   return jsonb_build_object('approve', a, 'reject', r, 'abstain', ab, 'base', b, 'percent', pct, 'base_count', base_n, 'required', req,
@@ -128,8 +162,13 @@ begin
   if p_percent is null or p_percent < 1 or p_percent > 100 then raise exception 'النسبة بين 1 و100'; end if;
   select * into v from public.votes where id = p_vote for update;
   if not found then raise exception 'التصويت غير موجود'; end if;
-  if v.status <> 'مفتوح' then raise exception 'لا تُعدَّل قاعدة الإقرار بعد إغلاق التصويت'; end if;
+  if v.status is distinct from 'مفتوح' then raise exception 'لا تُعدَّل قاعدة الإقرار بعد إغلاق التصويت'; end if;
+  if (v.closes_at is not null and v.closes_at < now()) or exists (select 1 from public.vote_participation where vote_id = p_vote) then
+    raise exception 'لا تُعدَّل قاعدة الإقرار بعد بدء التصويت (وصلت أصوات)';
+  end if;
+  perform set_config('app.rpc', 'on', true);
   update public.votes set approval_base = p_base, approval_percent = p_percent where id = p_vote;
+  perform set_config('app.rpc', '', true);
   insert into public.audit_logs(user_id, action, entity_type, entity_id, metadata)
     values (auth.uid(), 'vote_approval_rule', 'vote', p_vote, jsonb_build_object('base', p_base, 'percent', p_percent));
 end $$;

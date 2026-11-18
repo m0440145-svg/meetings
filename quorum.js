@@ -8,7 +8,7 @@
   const ui = window.ehsanUI;
   if (!ui) return;
   const {toast, session, waitDb} = ui;
-  let isAdmin = false;
+  let isAdmin = false, hasApproval = null; // hasApproval: هل الترحيل 049 مطبّق (يُحدَّد مرة واحدة)
 
   const BASES = {cast: 'المُدلين بموافق أو غير موافق (الممتنع لا يُحسب)', voters: 'كل المشاركين في التصويت (مع الممتنع)', present: 'الحاضرين في الاجتماع', members: 'أعضاء اللجنة'};
   const BASES_SHORT = {cast: 'مُدلٍ بموافق/غير موافق', voters: 'مشارك', present: 'حاضر', members: 'عضو في اللجنة'};
@@ -25,9 +25,12 @@
     const closed = art.querySelector('.tag')?.textContent.trim() === 'مغلق';
     const d = document.createElement('div'); d.className = 'meta qd';
     if (closed) {
+      if (hasApproval === false) return;
       const r = await db.rpc('vote_outcome', {p_vote: art.dataset.vote});
       const o = r.data;
-      if (r.error || !o) return;
+      if (r.error) { if (hasApproval === null) hasApproval = false; return; }
+      hasApproval = true;
+      if (!o) return;
       const detail = `موافق ${o.approve} مقابل غير موافق ${o.reject}، والمطلوب ${o.required} من ${o.base_count} ${BASES_SHORT[o.base] || ''} (${pctText(o.percent)})`;
       if (o.tied) { d.classList.add('qd-warn'); d.textContent = `النتيجة: متعادل — لا يُقَرّ (${o.approve} مقابل ${o.reject})`; }
       else if (o.passed) { d.classList.add('qd-ok'); d.textContent = 'النتيجة: مُقَرّ — ' + detail; }
@@ -41,16 +44,14 @@
         else if (q.mode === 'block') { d.classList.add('qd-block'); d.textContent = base + ' — غير مكتمل: لا يُقبل التصويت حتى يكتمل النصاب'; }
         else { d.classList.add('qd-warn'); d.textContent = base + ' — غير مكتمل (تنبيه فقط)'; }
       }
-      if (isAdmin) {
-        const probe = await db.rpc('vote_rule_get', {p_vote: art.dataset.vote});
-        if (!probe.error && probe.data) {
-          const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small ghost qd-rule'; b.textContent = 'قاعدة الإقرار لهذا التصويت';
-          b.addEventListener('click', () => openVoteRule(db, art.dataset.vote));
-          d.append(b);
-        }
+      if (isAdmin && hasApproval !== false) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn small ghost qd-rule'; b.textContent = 'قاعدة الإقرار لهذا التصويت';
+        b.addEventListener('click', () => openVoteRule(db, art.dataset.vote));
+        d.append(b);
       }
     }
     if (!d.textContent && !d.children.length) return;
+    art.querySelectorAll('.qd').forEach(x => x.remove()); // لا يتكرر العنصر عند استدعاءين متزامنين
     const m = art.querySelector('.meta');
     if (m) m.after(d); else art.append(d);
   }
@@ -141,6 +142,7 @@
     }
     if (!document.getElementById('approvalSettingsBtn')) {
       const probe = await db.rpc('approval_settings_get');
+      hasApproval = !probe.error;
       if (!probe.error) {
         const b = document.createElement('button'); b.type = 'button'; b.id = 'approvalSettingsBtn'; b.className = 'btn ghost'; b.textContent = '✔ قاعدة الإقرار';
         b.addEventListener('click', () => openApprovalSettings(db));

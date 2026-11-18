@@ -295,12 +295,13 @@ describe('security scenarios on the real migrations', () => {
     const [cr, mr, u4] = [id('c4'), id('d4'), id('a4')];
     const u3 = id('a3'); // أُنشئ في اختبار 048 السابق
     const vote = id => asUser(ID.m1, async () => (await db.query('select public.vote_outcome($1) as r', [id])).rows[0].r);
-    const mk = async (vid, a, r, ab, secret) => {
-      await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'قاعدة الإقرار', $3, 1, 'مفتوح', $4)", [vid, mr, secret ? 'سري' : 'علني', ID.admin]);
+    const nid = n => '00000000-0000-4000-8000-0000000' + (0x10000 + n).toString(16); // معرّف فريد لكل تصويت في الحلقات
+    const mk = async (vid, a, r, ab, secret, base, pct) => {
+      await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by, approval_base, approval_percent) values ($1, $2, 'قاعدة الإقرار', $3, 1, 'مفتوح', $4, $5, $6)", [vid, mr, secret ? 'سري' : 'علني', ID.admin, base || null, pct || null]);
       for (const [n, c] of [[a, 'موافق'], [r, 'غير موافق'], [ab, 'ممتنع']]) for (let i = 0; i < n; i++) await db.query('insert into public.vote_ballots(vote_id, choice, user_id) values ($1, $2, null)', [vid, c]);
     };
-    const close = async vid => { await db.query("select set_config('app.rpc', 'on', false)"); await db.query("update public.votes set status = 'مغلق', closed_at = now() where id = $1", [vid]); await db.query("select set_config('app.rpc', '', false)"); };
-    const rule = (vid, base, pct) => db.query('update public.votes set approval_base = $2, approval_percent = $3 where id = $1', [vid, base, pct]);
+    // الإغلاق كما تفعل close_vote: الحالة + النتيجة (فيها عدد الحاضرين) عبر app.rpc
+    const close = async (vid, result) => { await db.query("select set_config('app.rpc', 'on', false)"); await db.query("update public.votes set status = 'مغلق', closed_at = now(), result = $2::jsonb where id = $1", [vid, result ? JSON.stringify(result) : null]); await db.query("select set_config('app.rpc', '', false)"); };
 
     await db.query("insert into public.committees(id, name) values ($1, 'لجنة الإقرار')", [cr]);
     for (const u of [ID.admin, ID.m1, ID.m2, u3]) await db.query('insert into public.committee_members(committee_id, user_id) values ($1, $2)', [cr, u]);
@@ -311,12 +312,33 @@ describe('security scenarios on the real migrations', () => {
     const v1 = id('f1'); await mk(v1, 3, 1, 1, false);
     assert.equal(await vote(v1), null); // مفتوح: لا نتيجة
     await close(v1);
+    assert.equal((await vote(v1)).passed, true); // القاعدة الافتراضية المثبَّتة (cast 50.01)
     const cases = [['cast', 50.01, true], ['cast', 75, true], ['cast', 76, false], ['voters', 50.01, true], ['voters', 61, false], ['present', 66.66, true], ['present', 80, false], ['members', 50.01, true], ['members', 80, false]];
+    const ids = {};
+    let k = 0;
     for (const [b, p, want] of cases) {
-      await rule(v1, b, p);
-      const o = await vote(v1);
+      const cv = nid(++k); ids[b + p] = cv;
+      await mk(cv, 3, 1, 1, false, b, p); await close(cv);
+      const o = await vote(cv);
       assert.equal(o.passed, want, b + ' ' + p + ' -> ' + JSON.stringify(o));
     }
+    // أقفال التكامل: لا تُغيَّر قاعدة تصويت مغلق مباشرةً (حتى مع app.rpc)
+    assert.equal(await outcome(db.query('update public.votes set approval_percent = 1 where id = $1', [ids['cast76']])), 'P0001');
+    await db.query("select set_config('app.rpc', 'on', false)");
+    assert.equal(await outcome(db.query('update public.votes set approval_percent = 1 where id = $1', [ids['cast76']])), 'P0001');
+    await db.query("select set_config('app.rpc', '', false)");
+    assert.equal((await vote(ids['cast76'])).passed, false);
+    // عدد أعضاء اللجنة يُثبَّت عند الإغلاق: حذف عضو لاحقًا لا يقلب نتيجة مغلقة
+    const frozen = ids['members50.01'];
+    assert.equal((await vote(frozen)).base_count, 4);
+    await db.query('delete from public.committee_members where committee_id = $1 and user_id = $2', [cr, u3]);
+    assert.equal((await vote(frozen)).base_count, 4);
+    await db.query('insert into public.committee_members(committee_id, user_id) values ($1, $2)', [cr, u3]);
+    // الحاضرون يؤخذون مما حفظه الإغلاق (result.present) لا من الحضور الحالي
+    const pv = nid(++k); await mk(pv, 3, 1, 0, false, 'present', 50.01); await close(pv, {present: 4});
+    await db.query("update public.meeting_attendees set attendance_status = 'غائب' where meeting_id = $1 and user_id = $2", [mr, u3]);
+    assert.equal((await vote(pv)).base_count, 4);
+    await db.query("update public.meeting_attendees set attendance_status = 'حاضر' where meeting_id = $1 and user_id = $2", [mr, u3]);
     // التعادل لا يُقَرّ
     const v2 = id('f2'); await mk(v2, 2, 2, 0, false); await close(v2);
     let o = await vote(v2); assert.deepEqual([o.passed, o.tied], [false, true]);
@@ -338,6 +360,17 @@ describe('security scenarios on the real migrations', () => {
       assert.equal(await outcome(db.query("select public.vote_set_approval_rule($1, 'cast', 60)", [v4])), 'ok');
       assert.equal(await outcome(db.query("select public.vote_set_approval_rule($1, 'cast', 60)", [v2])), 'P0001'); // مغلق
     });
+    // بعد وصول أي صوت لا تُعدَّل قاعدة التصويت المفتوح
+    await db.query('insert into public.vote_participation(vote_id, user_id) values ($1, $2)', [v4, ID.admin]);
+    await asUser(ID.admin, async () => { assert.equal(await outcome(db.query("select public.vote_set_approval_rule($1, 'cast', 70)", [v4])), 'P0001'); });
+    // غير المدير لا يختار قاعدة عند فتح التصويت
+    await setClaims(ID.m1, 'authenticated');
+    try {
+      const v5 = nid(++k);
+      await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by, approval_base, approval_percent) values ($1, $2, 'س', 'علني', 1, 'مفتوح', $3, 'cast', 1)", [v5, mr, ID.m1]);
+      const rr = (await db.query('select approval_base, approval_percent from public.votes where id = $1', [v5])).rows[0];
+      assert.notEqual(Number(rr.approval_percent), 1);
+    } finally { await setClaims('', ''); }
     // الإعدادات للمدير فقط، ولا يغيّر العضو قاعدة اللجنة مباشرة
     await asUser(ID.m1, async () => {
       assert.equal(await outcome(db.query("select public.approval_settings_set('cast', 50.01, null)")), '42501');
