@@ -29,14 +29,57 @@
 #landing .lp-top:hover{background:var(--lp-strong);color:#fff}
 #landing .lp-foot .lp-credit a{color:#fff;font-weight:800;text-decoration:none;border-bottom:1px dotted rgba(255,255,255,.6);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
 #landing .lp-foot .lp-credit a:hover{color:#ffc58a;border-color:#ffc58a}
+#landing .tw-v.tw-on{border-inline-end:2px solid var(--lp-accent);margin-inline-end:-2px;animation:twBlink .6s steps(1) infinite}
+@keyframes twBlink{50%{border-color:transparent}}
 @media(prefers-reduced-motion:reduce){#landing .lp-sec.reveal .lp-card{opacity:1!important}#landing .lp-prog,#landing .lp-top{display:none}}
 `;
+  // «كتابة حية»: عند تمرير المؤشر على مربع تُكتب عناوينه ونصوصه حرفًا حرفًا (النص نفسه، والتخطيط ثابت لأن المتبقي يبقى مخفيًا).
+  const TW_BOX = '.lp-card, .lp-cta';
+  function typewriter(lp) {
+    const jobs = new WeakMap();
+    const finish = box => {
+      const j = jobs.get(box); if (!j) return;
+      cancelAnimationFrame(j.raf); jobs.delete(box);
+      j.els.forEach((e, i) => { e.textContent = j.texts[i]; });
+    };
+    const begin = box => {
+      finish(box);
+      const els = [...box.querySelectorAll('h2, h3, p')].filter(e => !e.children.length && e.textContent.trim());
+      if (!els.length) return;
+      const texts = els.map(e => e.textContent);
+      const parts = els.map((e, i) => {
+        e.textContent = '';
+        const v = document.createElement('span'); v.className = 'tw-v';
+        const h = document.createElement('span'); h.style.visibility = 'hidden'; h.textContent = texts[i];
+        e.append(v, h); return {v, h};
+      });
+      const j = {els, texts, raf: 0}; jobs.set(box, j);
+      let idx = 0, t0 = performance.now();
+      const step = now => {
+        if (jobs.get(box) !== j) return;
+        const txt = texts[idx], speed = /^H/.test(els[idx].tagName) ? 34 : 14;
+        const n = Math.min(txt.length, Math.floor((now - t0) / speed));
+        parts[idx].v.textContent = txt.slice(0, n); parts[idx].h.textContent = txt.slice(n);
+        parts[idx].v.classList.toggle('tw-on', n < txt.length);
+        if (n >= txt.length) { idx++; t0 = now; if (idx >= els.length) { finish(box); return; } }
+        j.raf = requestAnimationFrame(step);
+      };
+      j.raf = requestAnimationFrame(step);
+    };
+    lp.querySelectorAll(TW_BOX).forEach(box => {
+      box.addEventListener('mouseenter', () => begin(box));
+      box.addEventListener('mouseleave', () => finish(box));
+      box.addEventListener('focusin', () => begin(box));
+      box.addEventListener('focusout', () => finish(box));
+    });
+  }
   function start(lp) {
     if (lp.dataset.live) return; lp.dataset.live = '1';
     const st = document.createElement('style'); st.id = 'lpLiveStyle'; st.textContent = STYLE; document.head.append(st);
     // دخول متتابع: ترتيب البطاقات داخل كل قسم
     lp.querySelectorAll('.lp-sec').forEach(sec => sec.querySelectorAll('.lp-card').forEach((c, i) => c.style.setProperty('--i', i)));
     if (reduced()) return;
+    typewriter(lp);
     const bar = document.createElement('div'); bar.className = 'lp-prog'; bar.setAttribute('aria-hidden', 'true'); lp.prepend(bar);
     const top = document.createElement('button'); top.type = 'button'; top.className = 'lp-top'; top.setAttribute('aria-label', 'العودة إلى أعلى الصفحة'); top.textContent = '↑';
     top.onclick = () => window.scrollTo({top: 0, behavior: 'smooth'}); lp.append(top);
