@@ -30,6 +30,11 @@ function summary(line) {
 
 // جداول أساسية موجودة في الإنتاج ولا ترحيلات لها (تفترضها الترحيلات) وغير موجودة في tests/prelude.sql. أعمدتها مستنتجة من استخدام الترحيلات لها.
 const EXTRA_BASE = `
+alter table auth.users add column if not exists raw_user_meta_data jsonb, add column if not exists email_confirmed_at timestamptz;
+alter table public.profiles add column if not exists email text, add column if not exists organization text;
+alter table public.committee_members add column if not exists committee_role text default 'member';
+alter table public.committees add column if not exists created_by uuid, add column if not exists created_at timestamptz default now();
+create or replace function storage.filename(name text) returns text language sql immutable as $$ select (string_to_array(name, '/'))[array_length(string_to_array(name, '/'), 1)] $$;
 create table if not exists public.attachments (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade,
   agenda_item_id uuid references public.agenda_items(id) on delete cascade, file_name text, storage_path text, uploaded_by uuid, created_at timestamptz default now());
 create table if not exists public.circular_responses (circular_id uuid references public.circular_decisions(id) on delete cascade, user_id uuid, choice text, comment text,
