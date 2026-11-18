@@ -122,8 +122,9 @@ describe('security scenarios on the real migrations', () => {
   after(async () => { await db?.close(); });
 
   check('approval gate: no public table is missing the approved_only policy', async () => {
-    const r = await db.query('select * from public.approval_gate_missing()');
-    assert.deepEqual(r.rows, [], 'tables without the approval gate: ' + JSON.stringify(r.rows));
+    // الدالة للمدير فقط (بتصميمها)؛ يستدعيها حساب المدير المعتمد
+    const rows = await asUser(ID.admin, async () => (await db.query('select * from public.approval_gate_missing()')).rows);
+    assert.deepEqual(rows, [], 'tables without the approval gate: ' + JSON.stringify(rows));
   });
 
   check('a member cannot edit sensitive profile columns but can edit their own contact data', async () => {
