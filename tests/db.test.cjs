@@ -64,6 +64,7 @@ async function gate(p, method) {
 
 describe('security scenarios on the real migrations', () => {
   before(async () => {
+    try {
     db = new PGlite();
     await db.waitReady;
     await db.exec(text('tests/prelude.sql'));
@@ -73,6 +74,10 @@ describe('security scenarios on the real migrations', () => {
     for (const f of migrations) {
       try { await db.exec(text('supabase/migrations/' + f)); }
       catch (e) { failures.push(f + ': ' + e.message); }
+    }
+    if (failures.length) {
+      // تنبيهات GitHub Actions: تظهر في ملخص التشغيل (سطر لكل إخفاق، الأول هو السبب الجذري وما بعده قد يكون نتيجة له)
+      failures.slice(0, 8).forEach(m => console.log('::error title=Migration failed on a clean database::' + m.replace(/\r?\n/g, ' ').slice(0, 600)));
     }
     assert.deepEqual(failures, [], 'migrations failed on a clean database (the first is the root cause, later ones may follow from it):\n' + failures.join('\n'));
     // بيانات تجريبية
@@ -84,6 +89,10 @@ describe('security scenarios on the real migrations', () => {
     await db.query("insert into public.committee_members(committee_id, user_id) values ($1, $2)", [ID.c1, ID.m1]);
     await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, end_time, created_by, status) values ($1, 'اجتماع اختبار', $2, current_date, '10:00', '11:00', $3, 'مجدول')", [ID.mt, ID.c1, ID.admin]);
     await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'سؤال اختبار', 'علني', 1, 'مفتوح', $3)", [ID.vt, ID.mt, ID.admin]);
+    } catch (e) {
+      console.log('::error title=DB test setup failed::' + String(e && e.message).replace(/\r?\n/g, ' ').slice(0, 800));
+      throw e;
+    }
   });
   after(async () => { await db?.close(); });
 
