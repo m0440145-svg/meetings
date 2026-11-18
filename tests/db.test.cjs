@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {PGlite} = require('@electric-sql/pglite');
+process.on('unhandledRejection', e => { console.error('UNHANDLED REJECTION:', e && e.stack || e); process.exitCode = 1; });
 
 const root = path.resolve(__dirname, '..');
 const text = p => fs.readFileSync(path.join(root, p), 'utf8');
@@ -48,28 +49,30 @@ async function gate(p, method) {
   return outcome(db.query('select public.api_gate()'));
 }
 
-before(async () => {
-  db = new PGlite();
-  await db.waitReady;
-  await db.exec(text('tests/prelude.sql'));
-  await db.exec("do $$ begin create role authenticator nologin; exception when duplicate_object then null; end $$;");
-  for (const f of migrations) {
-    try { await db.exec(text('supabase/migrations/' + f)); }
-    catch (e) { assert.fail('migration ' + f + ' failed on a clean database: ' + e.message); }
-  }
-  // بيانات تجريبية
-  for (const [id, name, role] of [[ID.admin, 'مدير اختبار', 'admin'], [ID.m1, 'عضو اختبار أول', 'member'], [ID.m2, 'عضو اختبار ثان', 'member']]) {
-    await db.query('insert into auth.users(id, email) values ($1, $2)', [id, name.length + '@example.test']);
-    await db.query("insert into public.profiles(id, full_name, role, role_code, is_active, approval_status) values ($1, $2, $3, $3, true, 'معتمد')", [id, name, role]);
-  }
-  await db.query("insert into public.committees(id, name) values ($1, 'لجنة اختبار')", [ID.c1]);
-  await db.query("insert into public.committee_members(committee_id, user_id) values ($1, $2)", [ID.c1, ID.m1]);
-  await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, end_time, created_by, status) values ($1, 'اجتماع اختبار', $2, current_date, '10:00', '11:00', $3, 'مجدول')", [ID.mt, ID.c1, ID.admin]);
-  await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'سؤال اختبار', 'علني', 1, 'مفتوح', $3)", [ID.vt, ID.mt, ID.admin]);
-});
-after(async () => { await db?.close(); });
+
 
 describe('security scenarios on the real migrations', () => {
+  before(async () => {
+    db = new PGlite();
+    await db.waitReady;
+    await db.exec(text('tests/prelude.sql'));
+    await db.exec("do $$ begin create role authenticator nologin; exception when duplicate_object then null; end $$;");
+    for (const f of migrations) {
+      try { await db.exec(text('supabase/migrations/' + f)); }
+      catch (e) { assert.fail('migration ' + f + ' failed on a clean database: ' + e.message); }
+    }
+    // بيانات تجريبية
+    for (const [id, name, role] of [[ID.admin, 'مدير اختبار', 'admin'], [ID.m1, 'عضو اختبار أول', 'member'], [ID.m2, 'عضو اختبار ثان', 'member']]) {
+      await db.query('insert into auth.users(id, email) values ($1, $2)', [id, name.length + '@example.test']);
+      await db.query("insert into public.profiles(id, full_name, role, role_code, is_active, approval_status) values ($1, $2, $3, $3, true, 'معتمد')", [id, name, role]);
+    }
+    await db.query("insert into public.committees(id, name) values ($1, 'لجنة اختبار')", [ID.c1]);
+    await db.query("insert into public.committee_members(committee_id, user_id) values ($1, $2)", [ID.c1, ID.m1]);
+    await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, end_time, created_by, status) values ($1, 'اجتماع اختبار', $2, current_date, '10:00', '11:00', $3, 'مجدول')", [ID.mt, ID.c1, ID.admin]);
+    await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'سؤال اختبار', 'علني', 1, 'مفتوح', $3)", [ID.vt, ID.mt, ID.admin]);
+  });
+  after(async () => { await db?.close(); });
+
   it('approval gate: no public table is missing the approved_only policy', async () => {
     const r = await db.query('select * from public.approval_gate_missing()');
     assert.deepEqual(r.rows, [], 'tables without the approval gate: ' + JSON.stringify(r.rows));
