@@ -23,6 +23,17 @@ const ID = {
 };
 let db;
 
+// جداول أساسية موجودة في الإنتاج ولا ترحيلات لها (تفترضها الترحيلات) وغير موجودة في tests/prelude.sql. أعمدتها مستنتجة من استخدام الترحيلات لها.
+const EXTRA_BASE = `
+create table if not exists public.attachments (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade,
+  agenda_item_id uuid references public.agenda_items(id) on delete cascade, file_name text, storage_path text, uploaded_by uuid, created_at timestamptz default now());
+create table if not exists public.circular_responses (circular_id uuid references public.circular_decisions(id) on delete cascade, user_id uuid, choice text, comment text,
+  responded_at timestamptz default now(), primary key (circular_id, user_id));
+create table if not exists public.transcripts (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade, content text, created_by uuid, created_at timestamptz default now());
+create table if not exists public.whiteboards (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade, content text, updated_by uuid, updated_at timestamptz default now());
+create table if not exists public.reminders (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade, created_by uuid, created_at timestamptz default now());
+`;
+
 async function setClaims(uid, role) {
   await db.query("select set_config('request.jwt.claim.sub', $1, false), set_config('request.jwt.claim.role', $2, false)", [uid || '', role || '']);
 }
@@ -56,11 +67,14 @@ describe('security scenarios on the real migrations', () => {
     db = new PGlite();
     await db.waitReady;
     await db.exec(text('tests/prelude.sql'));
+    await db.exec(EXTRA_BASE);
     await db.exec("do $$ begin create role authenticator nologin; exception when duplicate_object then null; end $$;");
+    const failures = [];
     for (const f of migrations) {
       try { await db.exec(text('supabase/migrations/' + f)); }
-      catch (e) { assert.fail('migration ' + f + ' failed on a clean database: ' + e.message); }
+      catch (e) { failures.push(f + ': ' + e.message); }
     }
+    assert.deepEqual(failures, [], 'migrations failed on a clean database (the first is the root cause, later ones may follow from it):\n' + failures.join('\n'));
     // بيانات تجريبية
     for (const [id, name, role] of [[ID.admin, 'مدير اختبار', 'admin'], [ID.m1, 'عضو اختبار أول', 'member'], [ID.m2, 'عضو اختبار ثان', 'member']]) {
       await db.query('insert into auth.users(id, email) values ($1, $2)', [id, name.length + '@example.test']);
