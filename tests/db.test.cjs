@@ -27,6 +27,13 @@ function summary(line) {
   console.error(line);
   try { if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '- ' + line + '\n'); } catch { /* غير حرج */ }
 }
+// يغلّف الاختبار: يسجّل نجاحه أو فشله (مع الرسالة) في ملخص التشغيل ثم يعيد رمي الخطأ
+function check(name, fn) {
+  it(name, async () => {
+    try { await fn(); summary('ok: ' + name); }
+    catch (e) { summary('FAIL: ' + name + ' :: ' + String(e && e.message).replace(/\r?\n/g, ' ').slice(0, 700)); throw e; }
+  });
+}
 
 // جداول أساسية موجودة في الإنتاج ولا ترحيلات لها (تفترضها الترحيلات) وغير موجودة في tests/prelude.sql. أعمدتها مستنتجة من استخدام الترحيلات لها.
 const EXTRA_BASE = `
@@ -114,12 +121,12 @@ describe('security scenarios on the real migrations', () => {
   });
   after(async () => { await db?.close(); });
 
-  it('approval gate: no public table is missing the approved_only policy', async () => {
+  check('approval gate: no public table is missing the approved_only policy', async () => {
     const r = await db.query('select * from public.approval_gate_missing()');
     assert.deepEqual(r.rows, [], 'tables without the approval gate: ' + JSON.stringify(r.rows));
   });
 
-  it('a member cannot edit sensitive profile columns but can edit their own contact data', async () => {
+  check('a member cannot edit sensitive profile columns but can edit their own contact data', async () => {
     await asUser(ID.m1, async () => {
       assert.equal(await outcome(db.query('update public.profiles set is_manual = true where id = $1', [ID.m1])), '42501');
       assert.equal(await outcome(db.query("update public.profiles set email = 'x@y.zz' where id = $1", [ID.m1])), '42501');
@@ -130,7 +137,7 @@ describe('security scenarios on the real migrations', () => {
     });
   });
 
-  it('a suspended account is rejected by SECURITY DEFINER RPCs', async () => {
+  check('a suspended account is rejected by SECURITY DEFINER RPCs', async () => {
     await setStatus(ID.m1, 'موقوف');
     try {
       await asUser(ID.m1, async () => {
@@ -140,7 +147,7 @@ describe('security scenarios on the real migrations', () => {
     } finally { await setStatus(ID.m1, 'معتمد'); }
   });
 
-  it('api_gate: unapproved accounts reach only is_approved and GET profiles; approved and anonymous pass', async () => {
+  check('api_gate: unapproved accounts reach only is_approved and GET profiles; approved and anonymous pass', async () => {
     await setStatus(ID.m1, 'موقوف');
     try {
       await asUser(ID.m1, async () => {
@@ -157,7 +164,7 @@ describe('security scenarios on the real migrations', () => {
     await db.query("select set_config('request.path', '', false)");
   });
 
-  it('is_admin requires an approved account', async () => {
+  check('is_admin requires an approved account', async () => {
     await asUser(ID.admin, async () => { assert.equal((await db.query('select public.is_admin() as r')).rows[0].r, true); });
     await setStatus(ID.admin, 'موقوف');
     try {
@@ -165,7 +172,7 @@ describe('security scenarios on the real migrations', () => {
     } finally { await setStatus(ID.admin, 'معتمد'); }
   });
 
-  it('attendance and voting flow: window across midnight, presence required, one vote, abstain needs a reason', async () => {
+  check('attendance and voting flow: window across midnight, presence required, one vote, abstain needs a reason', async () => {
     // اجتماع تبدأ لحظته الآن بتوقيت الرياض وتنتهي «قبلها» (يعبر منتصف الليل)
     await db.query(`update public.meetings set gregorian_date = (now() at time zone 'Asia/Riyadh')::date,
       start_time = (now() at time zone 'Asia/Riyadh')::time, end_time = ((now() at time zone 'Asia/Riyadh')::time - interval '1 minute') where id = $1`, [ID.mt]);
@@ -185,7 +192,7 @@ describe('security scenarios on the real migrations', () => {
     assert.equal(n.rows[0].c, 1);
   });
 
-  it('member_suspend / member_reactivate rules', async () => {
+  check('member_suspend / member_reactivate rules', async () => {
     await asUser(ID.m1, async () => { assert.equal(await outcome(db.query("select public.member_suspend($1, 'سبب')", [ID.m2])), '42501'); });
     await asUser(ID.admin, async () => {
       assert.equal(await outcome(db.query("select public.member_suspend($1, 'سبب الإيقاف')", [ID.m2])), 'ok');
@@ -199,7 +206,7 @@ describe('security scenarios on the real migrations', () => {
     } finally { await setStatus(ID.m2, 'معتمد'); }
   });
 
-  it('member_access_set: null committees keeps them; chair alias is normalised', async () => {
+  check('member_access_set: null committees keeps them; chair alias is normalised', async () => {
     const count = async () => (await db.query('select count(*)::int as c from public.committee_members where user_id = $1', [ID.m1])).rows[0].c;
     assert.equal(await count(), 1);
     await asUser(ID.admin, async () => {
