@@ -10,7 +10,7 @@
 
   Usage:   powershell -ExecutionPolicy Bypass -File tools\backup.ps1
            options: -OutDir D:\backups  -KeepDays 30  -SkipStorage
-  Output:  <OutDir>\mithaq-YYYYMMDD-HHMM\  public.sql, auth-users.sql (SENSITIVE: password hashes), storage\<bucket>\...
+  Output:  <OutDir>\mithaq-YYYYMMDD-HHMM\  public.sql, auth-users.sql (SENSITIVE: password hashes), storage\<bucket>\..., manifest.csv (SHA-256 of storage files)
   Restore: see docs\backup-restore.md
 #>
 param(
@@ -68,6 +68,12 @@ if (-not $SkipStorage) {
     }
   }
   Write-Host "Storage files saved: $count"
+  # manifest.csv: path, size, SHA-256 for every storage file (used to verify a restore)
+  $root = Join-Path $dest 'storage'
+  if (Test-Path $root) {
+    Get-ChildItem -Path $root -Recurse -File | ForEach-Object { [pscustomobject]@{ path = $_.FullName.Substring($root.Length + 1); bytes = $_.Length; sha256 = (Get-FileHash -Algorithm SHA256 -Path $_.FullName).Hash } } | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $dest 'manifest.csv')
+    Write-Host 'Manifest written: manifest.csv'
+  }
 }
 
 # 4) retention
