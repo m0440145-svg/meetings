@@ -37,6 +37,14 @@ create table if not exists public.circular_responses (circular_id uuid reference
 create table if not exists public.transcripts (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade, content text, created_by uuid, created_at timestamptz default now());
 create table if not exists public.whiteboards (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade, content text, updated_by uuid, updated_at timestamptz default now());
 create table if not exists public.reminders (id uuid primary key default gen_random_uuid(), meeting_id uuid references public.meetings(id) on delete cascade, created_by uuid, created_at timestamptz default now());
+-- سياسات أساسية في الإنتاج بلا ترحيلات؛ ترحيلاتنا تعدّلها بـ alter policy (034 و039) أو تعتمد وجودها
+create policy "agenda restrict to member meetings" on public.agenda_items as restrictive for select to authenticated using (true);
+create policy "attachments restrict to member meetings" on public.attachments as restrictive for select to authenticated using (true);
+create policy "votes restrict to member meetings" on public.votes as restrictive for select to authenticated using (true);
+create policy "minutes restrict to member meetings" on public.minutes as restrictive for select to authenticated using (true);
+create policy "meetings admin create" on public.meetings for insert to authenticated with check (true);
+create policy "profiles authenticated read" on public.profiles for select to authenticated using (true);
+create policy "profiles self update" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 `;
 
 async function setClaims(uid, role) {
@@ -78,7 +86,7 @@ describe('security scenarios on the real migrations', () => {
     const failures = [];
     for (const f of migrations) {
       try { await db.exec(text('supabase/migrations/' + f)); }
-      catch (e) { failures.push(f + ': ' + e.message); }
+      catch (e) { failures.push(f + ': ' + e.message); try { await db.exec('rollback'); } catch { /* لا معاملة مفتوحة */ } }
     }
     if (failures.length) {
       // تنبيهات GitHub Actions: تظهر في ملخص التشغيل (سطر لكل إخفاق، الأول هو السبب الجذري وما بعده قد يكون نتيجة له)
