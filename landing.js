@@ -12,7 +12,7 @@
   const wide = () => window.matchMedia('(min-width: 900px)').matches;
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const safeHttps = u => { try { return new URL(u).protocol === 'https:' ? new URL(u).href : ''; } catch { return ''; } };
-  const safeImg = u => u && (u.startsWith('assets/') ? u : safeHttps(u));
+  const safeImg = u => { if (!u) return ''; if (u.startsWith('assets/')) return u; const h = safeHttps(u); try { return h && new URL(h).hostname === 'hmauemcowlaqujeatbaz.supabase.co' ? h : ''; } catch { return ''; } }; // صور من مخزن المنصة فقط (CSP)
   let inApp = false, lastView = 'home', siteBuilt = false; // inApp: مستخدم مسجّل يعرض الصفحة العامة من داخل المنصة
   const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 

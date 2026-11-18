@@ -19,7 +19,8 @@
   let settings = {}, db = null, defaults = null;
 
   const safeHttps = u => { try { const x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
-  const safeLogo = u => u && (u.startsWith('assets/') ? u : safeHttps(u));
+  const IMG_HOST = 'hmauemcowlaqujeatbaz.supabase.co'; // الصور المسموحة: من المنصة أو من مخزنها فقط (سياسة CSP)
+  const safeLogo = u => { if (!u) return ''; if (u.startsWith('assets/')) return u; const h = safeHttps(u); try { return h && new URL(h).hostname === IMG_HOST ? h : ''; } catch { return ''; } };
   const hex = v => /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : '';
   const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; } };
   const writeCache = v => { try { localStorage.setItem(CACHE_KEY, JSON.stringify(v)); } catch { /* التخزين المحلي غير متاح */ } };
@@ -135,7 +136,7 @@
       let v = (form.elements[k]?.value || '').trim();
       if (k === 'contact_whatsapp') { v = v.replace(/[\s-]/g, ''); if (v && !/^\+?[0-9]{9,15}$/.test(v)) errs.push('رقم الواتساب: أرقام فقط مع رمز الدولة (مثل 9665XXXXXXXX)'); }
       if (MAX[k] && v.length > MAX[k]) errs.push(`الحقل "${k}" أطول من ${MAX[k]} حرفًا`);
-      if (IMAGE_KEYS.includes(k) && v && !safeLogo(v)) errs.push('روابط الصور يجب أن تبدأ بـ https://');
+      if (IMAGE_KEYS.includes(k) && v && !safeLogo(v)) errs.push('الصور تُرفع على المنصة (زر «رفع»)؛ الروابط الخارجية غير مسموحة لأسباب أمنية');
       if (HTTPS_KEYS.includes(k) && v && !safeHttps(v)) errs.push('روابط المواقع والتواصل يجب أن تبدأ بـ https://');
       if ((k === 'primary_color' || k === 'accent_color') && v && !hex(v)) errs.push('اللون غير صالح');
       out[k] = v;

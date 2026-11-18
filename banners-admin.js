@@ -38,7 +38,7 @@
     window.openModal?.(b ? 'تعديل إعلان' : 'إعلان جديد', `
       <label>العنوان (حتى ${LIMITS.title} حرفًا)<input id="mf_btitle" maxlength="${LIMITS.title}" value="${esc(b?.title || '')}" /></label>
       <label>النص (حتى ${LIMITS.body} حرف)<textarea id="mf_bbody" rows="2" maxlength="${LIMITS.body}">${esc(b?.body || '')}</textarea></label>
-      <label>صورة الخلفية: رابط https<input id="mf_bimg" maxlength="500" placeholder="https://..." value="${esc(b?.image_url || '')}" /></label>
+      <label>صورة الخلفية: رابط صورة مرفوعة على المنصة<input id="mf_bimg" maxlength="500" placeholder="https://..." value="${esc(b?.image_url || '')}" /></label>
       <label>أو ارفع صورة PNG/JPG/WebP<input id="mf_bfile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
       <label>رابط الزر (https، اختياري)<input id="mf_blink" maxlength="500" placeholder="https://..." value="${esc(b?.link_url || '')}" /></label>
       <label>نص الزر (اختياري)<input id="mf_bcta" maxlength="${LIMITS.cta}" value="${esc(b?.cta_label || '')}" /></label>
@@ -55,7 +55,7 @@
           sort_order: Math.max(0, Math.min(999, parseInt(v('mf_bord').value, 10) || 0)), starts_at: toIso(v('mf_bstart').value), ends_at: toIso(v('mf_bend').value)
         };
         if (!row.title) return toast('أدخل عنوان الإعلان');
-        if (row.image_url && !safeHttps(row.image_url)) return toast('رابط الصورة يجب أن يبدأ بـ https://');
+        if (row.image_url && !(safeHttps(row.image_url) && new URL(row.image_url).hostname === 'hmauemcowlaqujeatbaz.supabase.co')) return toast('ارفع الصورة بزر الرفع؛ الروابط الخارجية للصور غير مسموحة لأسباب أمنية');
         if (row.link_url && !safeHttps(row.link_url)) return toast('رابط الزر يجب أن يبدأ بـ https://');
         if (row.starts_at && row.ends_at && new Date(row.ends_at) <= new Date(row.starts_at)) return toast('تاريخ الانتهاء يجب أن يكون بعد البداية');
         if (file) {
