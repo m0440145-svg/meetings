@@ -7,7 +7,11 @@
 --    (ضيف حاضر يصوّت كما تقرر لكنه لا يُحتسب في النصاب). اجتماع بلا لجنة أو لجنة بلا أعضاء: النصاب غير منطبق.
 -- 4) في وضع «منع» فقط: مشغّل على votes (فتح التصويت) وفحص داخل cast_vote (قبول الصوت). عدّاد vote_tally.quorum_met (عدد الأصوات) باقٍ كما هو.
 -- 5) quorum_settings_get/set للمدير/أمين السر مع سجل تدقيق.
--- آمن لإعادة التنفيذ. للتراجع الكامل: drop trigger trg_guard_vote_quorum on public.votes; ثم أعد تعريف cast_vote من 046؛ والوضع «off» يعطّل الأثر دون حذف.
+-- آمن لإعادة التنفيذ. تعطيل الأثر فورًا دون حذف: ضبط الوضع «off» من «إعدادات النصاب».
+-- التراجع الكامل: drop trigger if exists trg_guard_vote_quorum on public.votes; drop trigger if exists trg_guard_committee_quorum on public.committees;
+--   ثم أعد تشغيل تعريف cast_vote من 046؛ ثم drop function quorum_state(uuid), meeting_quorum(uuid), vote_quorum(uuid), guard_vote_quorum(), guard_committee_quorum(), quorum_settings_get(), quorum_settings_set(text, numeric, jsonb);
+--   ثم drop table public.quorum_settings; alter table public.committees drop column quorum_percent;
+-- ملاحظة تصميم: في وضع «منع» يُحسب النصاب لحظة كل صوت لا لحظة فتح التصويت، فنزول الحضور أثناء التصويت يوقف قبول الأصوات.
 begin;
 
 alter table public.committees add column if not exists quorum_percent numeric(5,2);
@@ -29,6 +33,7 @@ create policy approved_only on public.quorum_settings as restrictive for all to 
 drop policy if exists quorum_settings_admin on public.quorum_settings;
 create policy quorum_settings_admin on public.quorum_settings for all to authenticated using (public.is_admin()) with check (public.is_admin());
 revoke all on public.quorum_settings from anon;
+revoke insert, update, delete, truncate on public.quorum_settings from authenticated;   -- الكتابة عبر quorum_settings_set فقط (مع التدقيق)
 grant select on public.quorum_settings to authenticated;
 
 -- الحالة (داخلية: بلا فحص صلاحية، لا تُمنح للعملاء)
@@ -40,8 +45,12 @@ begin
   if not found then return null; end if;
   select * into s from public.quorum_settings where id = 1;
   if m.committee_id is not null then
-    select count(*) into eligible from public.committee_members cm where cm.committee_id = m.committee_id;
+    -- الأعضاء الموقوفون/المرفوضون/غير النشطين لا يُحتسبون لا في المقام ولا في الحضور
+    select count(*) into eligible from public.committee_members cm
+      join public.profiles p on p.id = cm.user_id and p.is_active is not false and coalesce(p.approval_status, 'معتمد') not in ('موقوف', 'مرفوض')
+     where cm.committee_id = m.committee_id;
     select count(*) into present from public.committee_members cm
+      join public.profiles p on p.id = cm.user_id and p.is_active is not false and coalesce(p.approval_status, 'معتمد') not in ('موقوف', 'مرفوض')
       join public.meeting_attendees a on a.meeting_id = p_meeting and a.user_id = cm.user_id and a.attendance_status in ('حاضر', 'عن بعد')
      where cm.committee_id = m.committee_id;
   end if;
@@ -132,6 +141,21 @@ begin
   values (p_vote, p_choice, case when v.vote_type = 'سري' then null else uid end, case when p_choice = 'ممتنع' then left(rs, 1000) end);
 end $$;
 
+-- حارس نسبة اللجنة: لا يغيّرها إلا المدير (حتى لو ملك المنشئ/الرئيس تعديل اللجنة عبر سياساتها القائمة)
+create or replace function public.guard_committee_quorum() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is not null and not public.is_admin() then
+    if tg_op = 'INSERT' then new.quorum_percent := null;
+    elsif new.quorum_percent is distinct from old.quorum_percent then raise exception 'لا يغيّر نسبة النصاب إلا مدير المنصة' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.guard_committee_quorum() from public, anon, authenticated;
+drop trigger if exists trg_guard_committee_quorum on public.committees;
+create trigger trg_guard_committee_quorum before insert or update on public.committees for each row execute function public.guard_committee_quorum();
+
 -- إعدادات النصاب (للمدير/أمين السر)
 create or replace function public.quorum_settings_get() returns jsonb
 language plpgsql stable security definer set search_path = public as $$
@@ -159,6 +183,7 @@ begin
     update public.committees set quorum_percent = pct where id = cid;
   end loop;
   update public.quorum_settings set mode = p_mode, default_percent = p_default, updated_by = auth.uid(), updated_at = now() where id = 1;
+  if not found then insert into public.quorum_settings(id, mode, default_percent, updated_by) values (1, p_mode, p_default, auth.uid()); end if;
   insert into public.audit_logs(user_id, action, entity_type, entity_id, metadata)
     values (auth.uid(), 'quorum_settings_set', 'quorum_settings', null, jsonb_build_object('mode', p_mode, 'default_percent', p_default, 'committees', coalesce(p_committees, '[]'::jsonb)));
 end $$;

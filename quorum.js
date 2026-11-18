@@ -14,6 +14,7 @@
   async function decorate(db, art) {
     if (art.dataset.qd) return;
     art.dataset.qd = '1';
+    if (art.querySelector('.tag')?.textContent.trim() === 'مغلق') return; // لا يُعرض على التصويتات المغلقة (يتغير الحضور بعدها ولا حاجة لطلب إضافي)
     const r = await db.rpc('vote_quorum', {p_vote: art.dataset.vote});
     const q = r.data;
     if (r.error || !q || !q.applicable || q.mode === 'off') return;

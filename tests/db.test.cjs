@@ -276,6 +276,14 @@ describe('security scenarios on the real migrations', () => {
     await asUser(ID.admin, async () => { assert.equal(await outcome(db.query("select public.quorum_settings_set('warn', 50.01, $1::jsonb)", [JSON.stringify([{id: cq, percent: 100}])])), 'ok'); });
     r = await quorum(ID.m1);
     assert.deepEqual([r.required, r.met, r.mode], [3, false, 'warn']);
+    // الموقوف لا يُحتسب لا في المقام ولا في الحضور
+    await setStatus(ID.m2, 'موقوف');
+    try { r = await quorum(ID.m1); assert.deepEqual([r.eligible, r.present, r.required], [2, 1, 2]); } finally { await setStatus(ID.m2, 'معتمد'); }
+    // نسبة اللجنة لا يغيّرها إلا المدير، وجدول الإعدادات لا يُكتب مباشرة
+    const setPct = async uid => { await setClaims(uid, 'authenticated'); try { return await outcome(db.query('update public.committees set quorum_percent = 1 where id = $1', [cq])); } finally { await setClaims('', ''); } };
+    assert.equal(await setPct(ID.m1), '42501');
+    assert.equal(await setPct(ID.admin), 'ok');
+    await asUser(ID.admin, async () => { assert.equal(await outcome(db.query("update public.quorum_settings set mode = 'off' where id = 1")), '42501'); });
     // من لا علاقة له بالاجتماع لا يرى الحالة
     await db.query('insert into auth.users(id, email) values ($1, $2)', [u3, 'u3@example.test']);
     await db.query("insert into public.profiles(id, full_name, role, role_code, is_active, approval_status) values ($1, 'غريب اختبار', 'member', 'member', true, 'معتمد')", [u3]);
