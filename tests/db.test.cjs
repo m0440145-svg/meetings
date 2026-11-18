@@ -22,6 +22,11 @@ const ID = {
   vt: '00000000-0000-4000-8000-0000000000e1'
 };
 let db;
+// يكتب في ملخص تشغيل GitHub Actions (الصفحة الرئيسية للتشغيل) حتى لا نحتاج لتصفح السجلات الطويلة
+function summary(line) {
+  console.error(line);
+  try { if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '- ' + line + '\n'); } catch { /* غير حرج */ }
+}
 
 // جداول أساسية موجودة في الإنتاج ولا ترحيلات لها (تفترضها الترحيلات) وغير موجودة في tests/prelude.sql. أعمدتها مستنتجة من استخدام الترحيلات لها.
 const EXTRA_BASE = `
@@ -77,7 +82,7 @@ describe('security scenarios on the real migrations', () => {
     }
     if (failures.length) {
       // تنبيهات GitHub Actions: تظهر في ملخص التشغيل (سطر لكل إخفاق، الأول هو السبب الجذري وما بعده قد يكون نتيجة له)
-      failures.slice(0, 8).forEach(m => console.log('::error title=Migration failed on a clean database::' + m.replace(/\r?\n/g, ' ').slice(0, 600)));
+      failures.slice(0, 8).forEach(m => summary('Migration failed on a clean database: ' + m.replace(/\r?\n/g, ' ').slice(0, 600)));
     }
     assert.deepEqual(failures, [], 'migrations failed on a clean database (the first is the root cause, later ones may follow from it):\n' + failures.join('\n'));
     // بيانات تجريبية
@@ -90,7 +95,7 @@ describe('security scenarios on the real migrations', () => {
     await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, end_time, created_by, status) values ($1, 'اجتماع اختبار', $2, current_date, '10:00', '11:00', $3, 'مجدول')", [ID.mt, ID.c1, ID.admin]);
     await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'سؤال اختبار', 'علني', 1, 'مفتوح', $3)", [ID.vt, ID.mt, ID.admin]);
     } catch (e) {
-      console.log('::error title=DB test setup failed::' + String(e && e.message).replace(/\r?\n/g, ' ').slice(0, 800));
+      summary('DB test setup failed: ' + String(e && e.message).replace(/\r?\n/g, ' ').slice(0, 800));
       throw e;
     }
   });
