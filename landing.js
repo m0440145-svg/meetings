@@ -321,7 +321,7 @@ html[data-auth=in] .lp-gate-close{display:none}
         <section class="lp-cta reveal" aria-label="الدخول إلى المنصة"><div><h2>${inApp ? 'مساحة عملك بانتظارك' : 'هل أنت عضو في المجلس أو إحدى اللجان؟'}</h2><p>ادخل لمتابعة اجتماعاتك ومحاضرك ومهامك.</p></div><button class="lp-btn solid" id="lpCta" type="button">${inApp ? 'الدخول إلى المنصة' : 'تسجيل الدخول'}</button></section>
         <section class="lp-sec reveal" id="lp-contact" aria-labelledby="lp-contact-h"><h2 id="lp-contact-h">اتصل بنا</h2><div id="lpContact"></div></section>
       </main>
-      <footer class="lp-foot" id="lp-footer"><div class="lp-foot-in" id="lpFoot"></div><small>© <span id="lpYear"></span> <span data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</span></small><small class="lp-credit">تصميم الموقع من إعداد محمد ناجي</small></footer>`;
+      <footer class="lp-foot" id="lp-footer"><div class="lp-foot-in" id="lpFoot"></div><small>© <span id="lpYear"></span> <span data-brand="org_name">جمعية الإحسان للخدمات الاجتماعية</span></small><small class="lp-credit">تصميم الموقع من إعداد محمد ناجي · <a href="tel:+966503829605" dir="ltr">0503829605</a></small></footer>`;
     document.body.prepend(el);
     el.querySelector('#lpYear').textContent = new Date().getFullYear();
     paintContent(s);
