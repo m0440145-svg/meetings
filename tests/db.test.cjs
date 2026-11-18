@@ -241,4 +241,44 @@ describe('security scenarios on the real migrations', () => {
     });
     assert.equal((await db.query('select committee_id from public.meetings where id = $1', [m2])).rows[0].committee_id, c2);
   });
+
+  check('048: attendance quorum — warn by default; block mode enforces opening and casting a vote', async () => {
+    const [cq, mq, v1, v2, v3, u3] = ['c3', 'd3', 'e3', 'e4', 'e5', 'a3'].map(s => '00000000-0000-4000-8000-0000000000' + s);
+    await db.query("insert into public.committees(id, name) values ($1, 'لجنة النصاب')", [cq]);
+    for (const u of [ID.admin, ID.m1, ID.m2]) await db.query('insert into public.committee_members(committee_id, user_id) values ($1, $2)', [cq, u]);
+    await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, created_by, status) values ($1, 'اجتماع النصاب', $2, current_date, '10:00', $3, 'مجدول')", [mq, cq, ID.admin]);
+    await db.query("insert into public.meeting_attendees(meeting_id, user_id, attendance_status, source) values ($1, $2, 'حاضر', 'أمين السر')", [mq, ID.m1]);
+    const quorum = uid => asUser(uid, async () => (await db.query('select public.meeting_quorum($1) as r', [mq])).rows[0].r);
+    // فتح تصويت كمدير مع بقاء الدور superuser (RLS لا يهم هنا؛ المشغّل يرى auth.uid() = المدير)
+    const openVote = async id => { await setClaims(ID.admin, 'authenticated'); try { return await outcome(db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'سؤال النصاب', 'علني', 1, 'مفتوح', $3)", [id, mq, ID.admin])); } finally { await setClaims('', ''); } };
+
+    let r = await quorum(ID.m1);
+    assert.deepEqual([r.eligible, r.present, r.required, r.met, r.mode], [3, 1, 2, false, 'warn']); // 50.01% من 3 = 2
+    // وضع «تحذير»: لا منع
+    assert.equal(await openVote(v1), 'ok');
+    assert.equal(await openVote(v2), 'ok');
+    await asUser(ID.m1, async () => { assert.equal(await outcome(db.query("select public.cast_vote($1, 'موافق', null)", [v1])), 'ok'); });
+    // الإعدادات للمدير فقط
+    await asUser(ID.m1, async () => {
+      assert.equal(await outcome(db.query("select public.quorum_settings_set('block', 50.01, null)")), '42501');
+      assert.equal(await outcome(db.query('select public.quorum_settings_get()')), '42501');
+    });
+    await asUser(ID.admin, async () => { assert.equal(await outcome(db.query("select public.quorum_settings_set('block', 50.01, null)")), 'ok'); });
+    // وضع «منع»
+    assert.equal(await openVote(v3), 'P0001'); // لا يُفتح تصويت والنصاب ناقص
+    await asUser(ID.m1, async () => { assert.equal(await outcome(db.query("select public.cast_vote($1, 'موافق', null)", [v2])), 'P0001'); });
+    await db.query("insert into public.meeting_attendees(meeting_id, user_id, attendance_status, source) values ($1, $2, 'عن بعد', 'أمين السر')", [mq, ID.m2]);
+    r = await quorum(ID.m1);
+    assert.deepEqual([r.present, r.required, r.met], [2, 2, true]);
+    await asUser(ID.m1, async () => { assert.equal(await outcome(db.query("select public.cast_vote($1, 'موافق', null)", [v2])), 'ok'); });
+    assert.equal(await openVote(v3), 'ok');
+    // نسبة اللجنة 100%: يلزم حضور الثلاثة
+    await asUser(ID.admin, async () => { assert.equal(await outcome(db.query("select public.quorum_settings_set('warn', 50.01, $1::jsonb)", [JSON.stringify([{id: cq, percent: 100}])])), 'ok'); });
+    r = await quorum(ID.m1);
+    assert.deepEqual([r.required, r.met, r.mode], [3, false, 'warn']);
+    // من لا علاقة له بالاجتماع لا يرى الحالة
+    await db.query('insert into auth.users(id, email) values ($1, $2)', [u3, 'u3@example.test']);
+    await db.query("insert into public.profiles(id, full_name, role, role_code, is_active, approval_status) values ($1, 'غريب اختبار', 'member', 'member', true, 'معتمد')", [u3]);
+    assert.equal(await quorum(u3), null);
+  });
 });
