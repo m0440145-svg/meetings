@@ -220,4 +220,25 @@ describe('security scenarios on the real migrations', () => {
     const r = await db.query('select committee_role from public.committee_members where user_id = $1 and committee_id = $2', [ID.m1, ID.c1]);
     assert.equal(r.rows[0].committee_role, 'رئيس اللجنة');
   });
+
+  check('047: only an admin can move a meeting to another committee', async () => {
+    const c2 = '00000000-0000-4000-8000-0000000000c2';
+    const m2 = '00000000-0000-4000-8000-0000000000d2';
+    await db.query("insert into public.committees(id, name) values ($1, 'لجنة اختبار ثانية')", [c2]);
+    await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, created_by, status) values ($1, 'اجتماع منشئه عضو', $2, current_date, '10:00', $3, 'مجدول')", [m2, ID.c1, ID.m1]);
+    // سياسات الإنتاج الأساسية المقابلة (تُنشأ هنا لأنها تستدعي دالة is_admin التي تأتي بترحيلاتنا)
+    await db.exec(`drop policy if exists t_meetings_sel on public.meetings; create policy t_meetings_sel on public.meetings for select to authenticated using (true);
+      drop policy if exists "meetings owner update" on public.meetings;
+      create policy "meetings owner update" on public.meetings for update to authenticated using (public.is_admin() or created_by = auth.uid()) with check (public.is_admin() or created_by = auth.uid());`);
+    await asUser(ID.m1, async () => {
+      assert.equal(await outcome(db.query('update public.meetings set committee_id = $2 where id = $1', [m2, c2])), '42501'); // المنشئ لا ينقل
+      assert.equal(await outcome(db.query('update public.meetings set committee_id = $2, title = $3 where id = $1', [m2, ID.c1, 'عنوان جديد'])), 'ok'); // نفس القيمة مع تعديل آخر
+      assert.equal(await outcome(db.query('update public.meetings set title = $2 where id = $1', [m2, 'عنوان آخر'])), 'ok');
+    });
+    assert.equal((await db.query('select committee_id from public.meetings where id = $1', [m2])).rows[0].committee_id, ID.c1);
+    await asUser(ID.admin, async () => {
+      assert.equal(await outcome(db.query('update public.meetings set committee_id = $2 where id = $1', [m2, c2])), 'ok'); // المدير ينقل
+    });
+    assert.equal((await db.query('select committee_id from public.meetings where id = $1', [m2])).rows[0].committee_id, c2);
+  });
 });
