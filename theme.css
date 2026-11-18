@@ -1,0 +1,57 @@
+/* الوضع الداكن للمنصة (يُفعَّل بـ html[data-theme=dark]) — لا يمس صفحة الدخول ولا الواجهة التعريفية */
+html[data-theme=dark]{color-scheme:dark;--bg:#241f1c;--ink:#f1e8e2;--white:#2b2521;--line:#4a3f38;--muted:#a89b93;--shadow:0 12px 35px rgba(0,0,0,.35);--surface-2:#332b26}
+html[data-theme=dark] body{background:#1b1714;color:var(--ink)}
+html[data-theme=dark] .main-area,html[data-theme=dark] .app-shell{background:#1b1714}
+html[data-theme=dark] .topbar{background:rgba(32,27,24,.96);border-bottom-color:var(--line)}
+html[data-theme=dark] .topbar p,html[data-theme=dark] .hero-panel p,html[data-theme=dark] .stats-grid span,html[data-theme=dark] .stats-grid small,html[data-theme=dark] .list-item .meta,html[data-theme=dark] .meta,html[data-theme=dark] .task-card small,html[data-theme=dark] .upload-zone span{color:#b9ada5}
+html[data-theme=dark] .icon-btn,html[data-theme=dark] .profile-btn,html[data-theme=dark] .btn.ghost,html[data-theme=dark] .chip,html[data-theme=dark] .remove-btn{background:#2b2521;color:var(--ink);border-color:var(--line)}
+html[data-theme=dark] .btn.ghost{color:#ffa468;border-color:#a8461a}
+html[data-theme=dark] .hero-panel{background:radial-gradient(circle at 10% 20%,rgba(241,137,39,.18),transparent 38%),linear-gradient(135deg,#2b2521,#241f1c);border-color:var(--line)}
+html[data-theme=dark] .stats-grid article,html[data-theme=dark] .card,html[data-theme=dark] .form-card,html[data-theme=dark] .cards-grid>article,html[data-theme=dark] .mail-layout,html[data-theme=dark] .list-item,html[data-theme=dark] .table-wrap,html[data-theme=dark] .task-card,html[data-theme=dark] .quick-card,html[data-theme=dark] .feature-matrix article,html[data-theme=dark] .ai-result,html[data-theme=dark] .home-dropdown,html[data-theme=dark] .mail-folders button.active{background:#2b2521;border-color:var(--line);color:var(--ink)}
+html[data-theme=dark] .table-wrap th,html[data-theme=dark] .agenda-number,html[data-theme=dark] .kanban>div,html[data-theme=dark] .mail-folders,html[data-theme=dark] .upload-zone,html[data-theme=dark] .tag{background:#241f1c;color:#d8cdc6}
+html[data-theme=dark] .table-wrap th,html[data-theme=dark] .table-wrap td{border-color:var(--line)}
+html[data-theme=dark] input,html[data-theme=dark] select,html[data-theme=dark] textarea,html[data-theme=dark] .toolbar input,html[data-theme=dark] .toolbar select{background:#1f1a17;color:var(--ink);border-color:#5a4d45}
+html[data-theme=dark] ::placeholder{color:#8f827a}
+html[data-theme=dark] .status-pill{background:#3a312b;color:#e9dfd8}
+html[data-theme=dark] .status-pill.good{background:#173a2b;color:#7fd6a8}
+html[data-theme=dark] .status-pill.warn{background:#4a3414;color:#f1c47a}
+html[data-theme=dark] .status-pill.danger{background:#4a2121;color:#f1a1a1}
+html[data-theme=dark] .mail-item:hover{background:#332b26}
+html[data-theme=dark] .progress,html[data-theme=dark] .df-bar{background:#3a312b}
+html[data-theme=dark] .stats-grid strong,html[data-theme=dark] .eyebrow,html[data-theme=dark] .link-btn{color:#ff9a5c}
+html[data-theme=dark] dialog,html[data-theme=dark] .modal-card,html[data-theme=dark] .dm-dialog,html[data-theme=dark] .dm-form,html[data-theme=dark] .mm-dialog{background:#2b2521;color:var(--ink)}
+html[data-theme=dark] .dm-form input,html[data-theme=dark] .dm-dialog .dm-form select,html[data-theme=dark] .dm-dialog .dm-form textarea,html[data-theme=dark] .dm-x{background:#1f1a17;color:var(--ink);border-color:#5a4d45}
+html[data-theme=dark] dialog::backdrop{background:rgba(0,0,0,.6)}
+/* القائمة الجانبية (nav-groups.js) */
+html[data-theme=dark] #sidebar{background:#201b18;color:var(--ink);border-inline-start-color:var(--line);box-shadow:-8px 0 24px rgba(0,0,0,.4)}
+html[data-theme=dark] #sidebar .brand-box{border-bottom-color:var(--line)}
+html[data-theme=dark] #sidebar .brand-box strong,html[data-theme=dark] #sidebar .nf-text strong,html[data-theme=dark] #sidebar .nav-folder-toggle{color:var(--ink)}
+html[data-theme=dark] #sidebar .brand-box small,html[data-theme=dark] #sidebar .nf-text small,html[data-theme=dark] #sidebar .side-foot{color:#a89b93;border-top-color:var(--line)}
+html[data-theme=dark] #sidebar .nav-item{color:#e2d7d0}
+html[data-theme=dark] #sidebar .nav-item:hover,html[data-theme=dark] #sidebar .nav-folder-toggle:hover{background:#2e2723;color:#fff}
+html[data-theme=dark] #sidebar .nav-item.active{background:#3d2a1f;color:#ffa468}
+html[data-theme=dark] #sidebar .nav-folder.has-active>.nav-folder-toggle{background:#2e2723}
+html[data-theme=dark] #sidebar .nf-icon{background:#3a2c23}
+html[data-theme=dark] #sidebar .nav-folder{border-top-color:#3a312b}
+html[data-theme=dark] #sidebar .nav-sub{border-inline-start-color:#4a3f38}
+html[data-theme=dark] #sidebar .logo{background:#fff;border-color:var(--line)}
+/* التقويم والقرارات */
+html[data-theme=dark] .sched-cell{background:#2b2521}
+html[data-theme=dark] .sched-cell:hover{background:#332b26}
+html[data-theme=dark] .sched-cell.other{background:#241f1c;color:#6f635c}
+html[data-theme=dark] .sched-dow{background:#241f1c;color:#cfc3bb}
+html[data-theme=dark] .sched-ev{background:#4a3020;color:#ffc9a3}
+html[data-theme=dark] .df-kpi,html[data-theme=dark] .df-card,html[data-theme=dark] .df-col h3 small{background:#2b2521;color:var(--ink)}
+html[data-theme=dark] .df-col{background:#241f1c}
+html[data-theme=dark] .df-kpi span,html[data-theme=dark] .df-kpi small,html[data-theme=dark] .df-meta,html[data-theme=dark] .df-tabs button{color:#c9bcb3}
+html[data-theme=dark] .df-tag{background:#3a312b;color:#e2d7d0}
+html[data-theme=dark] .df-card.late{background:#3a2323}
+html[data-theme=dark] .df-tabs button[aria-selected=true]{color:#ffa468;border-bottom-color:#ffa468}
+html[data-theme=dark] .mm-list li,html[data-theme=dark] .bm-wrap{border-color:var(--line)}
+html[data-theme=dark] .bm-table th{background:#241f1c}
+/* مجموعات الأعضاء حسب الجهة */
+html[data-theme=dark] details.mm-group{background:#2b2521!important}
+/* زر تبديل الوضع */
+.theme-btn{width:42px;height:42px;border:1px solid var(--line);background:#fff;border-radius:11px;cursor:pointer;font-size:18px;line-height:1}
+html[data-theme=dark] .theme-btn{background:#2b2521;border-color:var(--line)}
+.theme-btn:focus-visible{outline:3px solid #f18927;outline-offset:2px}
