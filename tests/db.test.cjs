@@ -293,6 +293,7 @@ describe('security scenarios on the real migrations', () => {
   check('049: approval rule — outcome only after close; bases and percentages; tie; rule frozen at opening; admin-only settings', async () => {
     const id = s => '00000000-0000-4000-8000-0000000000' + s;
     const [cr, mr, u4] = [id('c4'), id('d4'), id('a4')];
+    const u3 = id('a3'); // أُنشئ في اختبار 048 السابق
     const vote = id => asUser(ID.m1, async () => (await db.query('select public.vote_outcome($1) as r', [id])).rows[0].r);
     const mk = async (vid, a, r, ab, secret) => {
       await db.query("insert into public.votes(id, meeting_id, question, vote_type, quorum_required, status, created_by) values ($1, $2, 'قاعدة الإقرار', $3, 1, 'مفتوح', $4)", [vid, mr, secret ? 'سري' : 'علني', ID.admin]);
