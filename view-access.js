@@ -5,7 +5,7 @@
   'use strict';
   const ui = window.ehsanUI;
   if (!ui) return;
-  const DEFAULT_MEMBER = ['home', 'site-home', 'notifications', 'mail', '__summary', 'volunteer', 'notify-prefs', 'meetings', 'schedule', 'dm-mine', 'tasks',
+  const DEFAULT_MEMBER = ['home', 'site-home', 'notifications', 'mail', '__summary', 'volunteer', 'notify-prefs', 'meetings', 'meeting-media', 'schedule', 'dm-mine', 'tasks',
     'members', 'committees', 'elections', 'votes', 'surveys', 'minutes', 'board-packs', 'conflicts', 'reg-assist', 'circulars', 'signatures', 'regulations', 'vdr', 'files', 'about', 'ideas'];
   const CHAIR = ['رئيس اللجنة', 'رئيس', 'chair'];
   async function start() {

@@ -65,3 +65,14 @@ test('no secrets are committed', () => {
   })(root);
   assert.deepEqual(bad, [], 'possible secrets found: ' + bad.join(', '));
 });
+
+test('frame-src allows only the media providers used by meeting-media.js (and media-src has no wildcard host)', () => {
+  const {FRAME_HOSTS} = require('../meeting-media.js');
+  const csp = /Content-Security-Policy" content="([^"]+)"/.exec(read('index.html'))[1];
+  const tokens = /frame-src ([^;]+)/.exec(csp)[1].trim().split(/\s+/);
+  assert.ok(!tokens.includes('https:') && !tokens.includes('*') && !tokens.includes('http:'), 'frame-src must not allow any https/any host');
+  const hosts = tokens.filter(t => t.startsWith('https://')).map(t => t.slice(8)).sort();
+  assert.deepEqual(hosts, [...FRAME_HOSTS, '*.sharepoint.com'].sort(), 'frame-src and FRAME_HOSTS in meeting-media.js must match');
+  const media = /media-src ([^;]+)/.exec(csp);
+  assert.ok(media && !media[1].split(/\s+/).includes('*'), 'media-src must exist and not be a bare wildcard');
+});

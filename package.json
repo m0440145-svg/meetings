@@ -3,7 +3,7 @@
   "private": true,
   "description": "Quality checks only (tests run in CI). The website itself has no build step and no runtime dependencies.",
   "scripts": {
-    "test": "node --test tests/static.test.cjs tests/db.test.cjs"
+    "test": "node --test tests/static.test.cjs tests/media.test.cjs tests/db.test.cjs"
   },
   "engines": {
     "node": ">=22"
