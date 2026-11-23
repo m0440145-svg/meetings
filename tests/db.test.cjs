@@ -422,6 +422,19 @@ describe('security scenarios on the real migrations', () => {
     assert.deepEqual(live, [mb]);
     await asUser(ID.admin, async () => { assert.equal(await outcome(db.query('select public.media_set_live($1, false)', [mb])), 'ok'); });
     assert.equal((await db.query('select count(*)::int as c from public.meeting_media where meeting_id = $1 and is_live', [mmx])).rows[0].c, 0);
+    // لا كتابة مباشرة في أعمدة العرض/المنشئ، ولا نقل عنصر إلى اجتماع آخر، ولا عنصرين معروضين
+    await asUser(ID.m2, async () => {
+      assert.equal(await outcome(db.query('update public.meeting_media set is_live = true where id = $1', [ma])), '42501');
+      assert.equal(await outcome(db.query('update public.meeting_media set meeting_id = $2 where id = $1', [ma, mmx])), '42501');
+      assert.equal(await outcome(db.query("insert into public.meeting_media(meeting_id, title, url, created_by) values ($1, 'س', 'https://example.org/z', $2)", [mmx, ID.admin])), '42501');
+      assert.equal(await outcome(db.query('update public.meeting_media set title = $2 where id = $1', [ma, 'عنوان معدّل'])), 'ok');
+    });
+    await db.query('update public.meeting_media set is_live = true where id = $1', [ma]);
+    assert.equal(await outcome(db.query('update public.meeting_media set is_live = true where id = $1', [mb])), '23505');   // فهرس العنصر الواحد
+    await db.query('update public.meeting_media set is_live = false where id = $1', [ma]);
+    // المنشئ يُسجَّل من الجلسة لا من المدخل
+    await asUser(ID.m2, async () => { await db.query("insert into public.meeting_media(meeting_id, title, url) values ($1, 'منشئ تلقائي', 'https://example.org/c')", [mmx]); });
+    assert.equal((await db.query("select created_by from public.meeting_media where title = 'منشئ تلقائي'")).rows[0].created_by, ID.m2);
     // حد أقصى 40 عنصرًا
     const have = (await db.query('select count(*)::int as c from public.meeting_media where meeting_id = $1', [mmx])).rows[0].c;
     for (let i = have; i < 40; i++) await db.query("insert into public.meeting_media(meeting_id, title, url) values ($1, 'عنصر', 'https://example.org/x')", [mmx]);

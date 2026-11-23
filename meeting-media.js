@@ -11,6 +11,14 @@
   const parse = raw => { try { const x = new URL(String(raw || '').trim()); return x.protocol === 'https:' && !x.username && !x.password && x.hostname ? x : null; } catch { return null; } };
   const frame = (provider, embed) => ({provider, kind: 'frame', embed});
 
+  // 90 أو 1m30s أو 1h2m3s -> ثوانٍ
+  function parseT(v) {
+    if (!v) return 0;
+    if (/^\d+$/.test(v)) return parseInt(v, 10);
+    const m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(v);
+    return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0;
+  }
+
   function allowedFrame(embed) {
     const u = parse(embed); if (!u) return false;
     const h = u.hostname.toLowerCase();
@@ -28,7 +36,7 @@
       else if (p === '/watch') id = q.get('v');
       else if ((m = /^\/(?:embed|shorts|live|v)\/([^/?#]+)/.exec(p))) id = m[1];
       if (id && ID11.test(id)) {
-        const t = parseInt(q.get('t') || q.get('start') || '0', 10);
+        const t = parseT(q.get('t') || q.get('start'));
         r = frame('يوتيوب', 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0' + (t > 0 && t < 86400 ? '&start=' + t : ''));
       }
     } else if (['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(h)) {
@@ -98,11 +106,14 @@
     curMeeting = sel.value;
   }
 
+  let seq = 0;
   async function loadItems() {
+    const my = ++seq;
     const box = $('mmList'); if (!box) return;
     $('mmAdd').hidden = !canManage();
     if (!curMeeting) { rows = []; box.replaceChildren(el('div', 'meta', 'اختر اجتماعًا لعرض محتواه.')); showStage(null); return; }
     const {data, error} = await db.from('meeting_media').select('*').eq('meeting_id', curMeeting).order('sort_order').order('created_at');
+    if (my !== seq) return; // وصل طلب أحدث
     if (error) { box.replaceChildren(el('div', 'meta', 'تعذر تحميل المحتوى')); return; }
     rows = data || [];
     renderList();
@@ -152,7 +163,7 @@
       const v = document.createElement('video'); v.controls = true; v.preload = 'metadata'; v.setAttribute('playsinline', ''); v.src = info.src; wrap.append(v);
     } else {
       const f = document.createElement('iframe'); f.src = info.embed; f.title = r.title; f.loading = 'lazy';
-      f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox');
+      f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation allow-popups allow-forms'); // بلا escape-sandbox: النوافذ المنبثقة ترث العزل
       f.setAttribute('allow', 'fullscreen; autoplay; picture-in-picture; encrypted-media');
       f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin'); f.setAttribute('allowfullscreen', ''); wrap.append(f);
     }
@@ -172,7 +183,7 @@
       onSubmit: async v => {
         if (!toEmbed(v.url)) throw new Error('الرابط يجب أن يبدأ بـ https://');
         const {error} = await db.from('meeting_media').insert({meeting_id: curMeeting, title: v.title, url: v.url.trim(), note: v.note || null});
-        if (error) throw new Error(/40/.test(error.message) ? 'بلغ الاجتماع الحد الأقصى من العناصر' : (error.message || 'تعذر الحفظ'));
+        if (error) throw new Error(error.code === 'P0001' ? 'بلغ الاجتماع الحد الأقصى من العناصر' : (error.message || 'تعذر الحفظ'));
         toast('أُضيف المحتوى');
         loadItems();
       }
@@ -257,8 +268,16 @@
     try {
       db.channel('meeting-media-live').on('postgres_changes', {event: '*', schema: 'public', table: 'meeting_media'}, payload => {
         const r = payload.new || {};
-        if (curMeeting && (r.meeting_id === curMeeting || payload.old?.meeting_id === curMeeting) && $('view-meeting-media')?.classList.contains('active')) loadItems();
-        if (payload.eventType !== 'DELETE' && r.is_live && r.created_by !== me.uid && shownId !== r.id) banner(r);
+        if (payload.eventType === 'DELETE') { // مع RLS لا يحمل old إلا المفتاح الأساسي
+          if (rows.some(x => x.id === payload.old?.id)) { if (shownId === payload.old.id) shownId = null; loadItems(); }
+          return;
+        }
+        if (curMeeting && r.meeting_id === curMeeting && $('view-meeting-media')?.classList.contains('active')) loadItems();
+        const mg = meetings.find(m => m.id === r.meeting_id);
+        const manages = me.admin || (mg && mg.created_by === me.uid); // من يدير الاجتماع لا يحتاج تنبيهًا بفعله
+        const navBtn = document.querySelector('[data-view="meeting-media"]');
+        const hidden = navBtn && getComputedStyle(navBtn).display === 'none'; // عضو بقائمة شاشات مخصّصة لا تتضمنها
+        if (r.is_live && !manages && !hidden && shownId !== r.id) banner(r);
       }).subscribe();
     } catch (e) { /* التحديث الفوري اختياري: يبقى زر «تحديث» */ }
   }

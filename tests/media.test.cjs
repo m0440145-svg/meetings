@@ -20,6 +20,9 @@ test('YouTube variants become the privacy-friendly embed', () => {
     assert.equal(r.embed, `https://www.youtube-nocookie.com/embed/${id}?rel=0`, u);
   }
   assert.equal(e(`https://youtu.be/${id}?t=90`).embed, `https://www.youtube-nocookie.com/embed/${id}?rel=0&start=90`);
+  assert.equal(e(`https://youtu.be/${id}?t=1m30s`).embed, `https://www.youtube-nocookie.com/embed/${id}?rel=0&start=90`);
+  assert.equal(e(`https://youtu.be/${id}?t=1h2m3s`).embed, `https://www.youtube-nocookie.com/embed/${id}?rel=0&start=3723`);
+  assert.equal(e(`https://youtu.be/${id}?t=garbage`).embed, `https://www.youtube-nocookie.com/embed/${id}?rel=0`);
   assert.equal(e('https://www.youtube.com/watch?v=short').kind, 'link'); // معرّف غير صالح
   assert.equal(e('https://www.youtube.com/@channel').kind, 'link');
 });

@@ -1,6 +1,7 @@
 -- عرض المحتوى داخل الاجتماع: روابط فيديو وعروض (PowerPoint وCanva وغيرها) تُحفظ لكل اجتماع وتُعرض داخل المنصة لمن يرى الاجتماع.
 -- 1) meeting_media: الرابط (https فقط) وعنوانه وملاحظة اختيارية وترتيبه، وعلامة «يُعرض الآن» (is_live). لا يُخزَّن ملف، الرابط فقط.
 -- 2) الصلاحيات: القراءة لمن يرى الاجتماع (سياسة meetings نفسها: مدير، منشئ، عضو لجنة، حاضر)، والكتابة للمدير/أمين السر ومنشئ الاجتماع فقط. حد أقصى 40 عنصرًا للاجتماع.
+-- (الأعمدة: لا كتابة مباشرة في is_live/live_since/created_by؛ ويضمن فهرس فريد عنصرًا واحدًا «يُعرض الآن» للاجتماع.)
 -- 3) media_set_live(عنصر، حالة): المدير/المنشئ يجعل عنصرًا «يُعرض الآن» (واحد فقط للاجتماع) فيظهر للحاضرين عبر التحديث الفوري (realtime).
 -- 4) تحويل الرابط إلى تضمين آمن يتم في الواجهة بقائمة مزوّدين محددة (يوتيوب، فيميو، كانفا، قوقل سلايدز/درايف، PowerPoint عبر OneDrive/SharePoint/Office Online، لوم)؛ ما عداها يُفتح كرابط في تبويب جديد بلا تضمين.
 -- آمن لإعادة التنفيذ. للتراجع: drop table public.meeting_media cascade; drop function public.media_set_live(uuid, boolean); drop function public.guard_media_limit();
@@ -19,6 +20,7 @@ create table if not exists public.meeting_media (
   created_at timestamptz not null default now()
 );
 create index if not exists meeting_media_meeting_idx on public.meeting_media(meeting_id, sort_order, created_at);
+create unique index if not exists meeting_media_one_live on public.meeting_media(meeting_id) where is_live;   -- عنصر واحد «يُعرض الآن» للاجتماع (حتى مع التزامن)
 
 alter table public.meeting_media enable row level security;
 drop policy if exists approved_only on public.meeting_media;
@@ -31,12 +33,18 @@ create policy meeting_media_write on public.meeting_media for all to authenticat
   using (public.is_admin() or exists (select 1 from public.meetings m where m.id = meeting_media.meeting_id and m.created_by = auth.uid()))
   with check (public.is_admin() or exists (select 1 from public.meetings m where m.id = meeting_media.meeting_id and m.created_by = auth.uid()));
 revoke all on public.meeting_media from anon;
-grant select, insert, update, delete on public.meeting_media to authenticated;
+-- صلاحيات على مستوى الأعمدة: is_live وlive_since وcreated_by وmeeting_id (بعد الإنشاء) لا تُكتب مباشرة؛ العرض عبر media_set_live
+revoke all on public.meeting_media from authenticated;
+grant select, delete on public.meeting_media to authenticated;
+grant insert (meeting_id, title, url, note, sort_order) on public.meeting_media to authenticated;
+grant update (title, url, note, sort_order) on public.meeting_media to authenticated;
 
 -- حد أقصى لعدد العناصر
 create or replace function public.guard_media_limit() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
+  if auth.uid() is not null then new.created_by := auth.uid(); end if;   -- لا يُزوَّر المُنشئ
+  perform pg_advisory_xact_lock(hashtext(new.meeting_id::text));         -- يمنع تجاوز الحد بإدراجين متزامنين
   if (select count(*) from public.meeting_media where meeting_id = new.meeting_id) >= 40 then
     raise exception 'بلغ الاجتماع الحد الأقصى من عناصر العرض (40)';
   end if;
