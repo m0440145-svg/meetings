@@ -383,4 +383,61 @@ describe('security scenarios on the real migrations', () => {
     await db.query("insert into public.profiles(id, full_name, role, role_code, is_active, approval_status) values ($1, 'غريب ثان', 'member', 'member', true, 'معتمد')", [u4]);
     assert.equal(await asUser(u4, async () => (await db.query('select public.vote_outcome($1) as r', [v1])).rows[0].r), null);
   });
+  check('050: meeting media — visible to participants only, writable by admin/creator, single live item, limits', async () => {
+    const id = s => '00000000-0000-4000-8000-0000000000' + s;
+    const [cmm, mmx, u4, ma, mb] = [id('c5'), id('d5'), id('a4'), id('01'), id('02')]; // u4: غريب أُنشئ في اختبار 049
+    await db.query("insert into public.committees(id, name) values ($1, 'لجنة العرض')", [cmm]);
+    await db.query('insert into public.committee_members(committee_id, user_id) values ($1, $2)', [cmm, ID.m1]);
+    await db.query("insert into public.meetings(id, title, committee_id, gregorian_date, start_time, created_by, status) values ($1, 'اجتماع العرض', $2, current_date, '10:00', $3, 'مجدول')", [mmx, cmm, ID.m2]);
+    // سياسة قراءة الاجتماعات كما في الإنتاج (بدل سياسة الاختبار المفتوحة)
+    await db.exec(`drop policy if exists t_meetings_sel on public.meetings; drop policy if exists "meetings participants read" on public.meetings;
+      create policy "meetings participants read" on public.meetings for select to authenticated using (public.is_admin() or created_by = auth.uid()
+        or exists (select 1 from public.meeting_attendees ma where ma.meeting_id = meetings.id and ma.user_id = auth.uid())
+        or exists (select 1 from public.committee_members cm where cm.committee_id = meetings.committee_id and cm.user_id = auth.uid()));
+      alter table public.meetings enable row level security;`);
+    const ins = (uid, title, url) => asUser(uid, () => outcome(db.query('insert into public.meeting_media(meeting_id, title, url) values ($1, $2, $3)', [mmx, title, url])));
+    const count = uid => asUser(uid, async () => (await db.query('select count(*)::int as c from public.meeting_media where meeting_id = $1', [mmx])).rows[0].c);
+
+    assert.equal(await ins(ID.m2, 'عرض المجلس', 'https://www.canva.com/design/DAFabc123XYZ/aBcDeF123456/view'), 'ok'); // المنشئ
+    assert.equal(await ins(ID.m1, 'محاولة عضو', 'https://youtu.be/dQw4w9WgXcQ'), '42501');                            // عضو لجنة ليس منشئًا
+    assert.equal(await ins(u4, 'محاولة غريب', 'https://youtu.be/dQw4w9WgXcQ'), '42501');
+    assert.equal(await ins(ID.admin, 'فيديو المدير', 'https://youtu.be/dQw4w9WgXcQ'), 'ok');                           // المدير
+    assert.equal(await count(ID.m1), 2);   // عضو اللجنة يرى
+    assert.equal(await count(ID.m2), 2);
+    assert.equal(await count(u4), 0);      // الغريب لا يرى
+    // قيود البيانات
+    assert.equal(await ins(ID.m2, 'رابط غير آمن', 'http://example.org/a.mp4'), '23514');
+    assert.equal(await ins(ID.m2, 'رابط جافاسكربت', 'javascript:alert(1)'), '23514');
+    assert.equal(await ins(ID.m2, '   ', 'https://example.org/a'), '23514');
+    // المجهول لا يصل
+    await asAnon(async () => { assert.equal(await outcome(db.query('select * from public.meeting_media')), '42501'); });
+    // «يُعرض الآن»: واحد للاجتماع، والتحكم للمدير/المنشئ فقط
+    await db.query('insert into public.meeting_media(id, meeting_id, title, url, created_by) values ($1, $3, $4, $5, $6), ($2, $3, $7, $8, $6)', [ma, mb, mmx, 'أ', 'https://example.org/a', ID.m2, 'ب', 'https://example.org/b']);
+    await asUser(ID.m1, async () => { assert.equal(await outcome(db.query('select public.media_set_live($1, true)', [ma])), '42501'); });
+    await asUser(ID.m2, async () => {
+      assert.equal(await outcome(db.query('select public.media_set_live($1, true)', [ma])), 'ok');
+      assert.equal(await outcome(db.query('select public.media_set_live($1, true)', [mb])), 'ok');
+    });
+    const live = (await db.query('select id from public.meeting_media where meeting_id = $1 and is_live', [mmx])).rows.map(r => r.id);
+    assert.deepEqual(live, [mb]);
+    await asUser(ID.admin, async () => { assert.equal(await outcome(db.query('select public.media_set_live($1, false)', [mb])), 'ok'); });
+    assert.equal((await db.query('select count(*)::int as c from public.meeting_media where meeting_id = $1 and is_live', [mmx])).rows[0].c, 0);
+    // لا كتابة مباشرة في أعمدة العرض/المنشئ، ولا نقل عنصر إلى اجتماع آخر، ولا عنصرين معروضين
+    await asUser(ID.m2, async () => {
+      assert.equal(await outcome(db.query('update public.meeting_media set is_live = true where id = $1', [ma])), '42501');
+      assert.equal(await outcome(db.query('update public.meeting_media set meeting_id = $2 where id = $1', [ma, mmx])), '42501');
+      assert.equal(await outcome(db.query("insert into public.meeting_media(meeting_id, title, url, created_by) values ($1, 'س', 'https://example.org/z', $2)", [mmx, ID.admin])), '42501');
+      assert.equal(await outcome(db.query('update public.meeting_media set title = $2 where id = $1', [ma, 'عنوان معدّل'])), 'ok');
+    });
+    await db.query('update public.meeting_media set is_live = true where id = $1', [ma]);
+    assert.equal(await outcome(db.query('update public.meeting_media set is_live = true where id = $1', [mb])), '23505');   // فهرس العنصر الواحد
+    await db.query('update public.meeting_media set is_live = false where id = $1', [ma]);
+    // المنشئ يُسجَّل من الجلسة لا من المدخل
+    await asUser(ID.m2, async () => { await db.query("insert into public.meeting_media(meeting_id, title, url) values ($1, 'منشئ تلقائي', 'https://example.org/c')", [mmx]); });
+    assert.equal((await db.query("select created_by from public.meeting_media where title = 'منشئ تلقائي'")).rows[0].created_by, ID.m2);
+    // حد أقصى 40 عنصرًا
+    const have = (await db.query('select count(*)::int as c from public.meeting_media where meeting_id = $1', [mmx])).rows[0].c;
+    for (let i = have; i < 40; i++) await db.query("insert into public.meeting_media(meeting_id, title, url) values ($1, 'عنصر', 'https://example.org/x')", [mmx]);
+    assert.equal(await ins(ID.admin, 'الحادي والأربعون', 'https://example.org/last'), 'P0001');
+  });
 });
