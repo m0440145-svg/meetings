@@ -393,7 +393,8 @@ describe('security scenarios on the real migrations', () => {
     await db.exec(`drop policy if exists t_meetings_sel on public.meetings; drop policy if exists "meetings participants read" on public.meetings;
       create policy "meetings participants read" on public.meetings for select to authenticated using (public.is_admin() or created_by = auth.uid()
         or exists (select 1 from public.meeting_attendees ma where ma.meeting_id = meetings.id and ma.user_id = auth.uid())
-        or exists (select 1 from public.committee_members cm where cm.committee_id = meetings.committee_id and cm.user_id = auth.uid()));`);
+        or exists (select 1 from public.committee_members cm where cm.committee_id = meetings.committee_id and cm.user_id = auth.uid()));
+      alter table public.meetings enable row level security;`);
     const ins = (uid, title, url) => asUser(uid, () => outcome(db.query('insert into public.meeting_media(meeting_id, title, url) values ($1, $2, $3)', [mmx, title, url])));
     const count = uid => asUser(uid, async () => (await db.query('select count(*)::int as c from public.meeting_media where meeting_id = $1', [mmx])).rows[0].c);
 
